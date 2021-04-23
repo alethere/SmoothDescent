@@ -1,0 +1,3 @@
+R/make_dataset.R
+^.*\.Rproj$
+^\.Rproj\.user$
