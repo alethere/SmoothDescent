@@ -290,19 +290,3 @@ smooth_map <- function(geno,
   return(res)
 }
 
-
-#Test --------
-for(file in list.files("R/",full.names = T)){ source(file)}
-geno <- read.table("test/test_geno.txt",header = T)
-map <- read.table("test/test_map.txt",header = T)
-hom <- read.table("test/test_hom.txt",header = T)
-
-smooth_test <- smooth_descent(geno,map,homologue = hom,ploidy = 2,
-               p1name = "P1",p2name = "P2",verbose = T)
-
-smoothmap_test <- smooth_map(geno,map,homologue = hom,ploidy = 2,
-                             p1name = "P1",p2name = "P2",verbose = T,
-                             mapping_ndim = 3)
-
-
-iterplot(smoothmap_test[c("oldmap","newmap")])

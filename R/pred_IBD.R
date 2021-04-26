@@ -88,34 +88,3 @@ predict_IBD.numeric <- function(IBD,map,interval = 10){
     sum(IBD[distance < interval & !is.na(IBD)]*weights)
   })
 }
-
-#Test -------------
-source("R/Utils.R")
-map <- read.table("test/test_map.txt",header = T)
-IBD <- readRDS("test/calc_IBD.matrix.RDS")
-
-#List
-pred <- predict_IBD(IBD,map,interval = 10)
-#saveRDS(pred,"test/pred_IBD.list.RDS")
-if(!is.list(pred)) stop("Output of predict_IBD.list is not list")
-if(any(sapply(IBD,dim) != sapply(pred,dim))) stop("Output of predict_IBD.list does not match input")
-pred_test <- readRDS("test/pred_IBD.list.RDS")
-if(!identical(pred,pred_test)) stop("Output of predict_IBD.list does not match stored output")
-
-#Matrix
-ib <- IBD$H1_P1[,-1:-2]
-pred <- predict_IBD(ib,map,interval = 10)
-#saveRDS(pred,"test/pred_IBD.matrix.RDS")
-if(!is.matrix(pred)) stop("Output of predict_IBD.matrix is not matrix")
-if(any(dim(ib) != dim(pred))) stop("Output of predict_IBD.matrix does not match input")
-pred_test <- readRDS("test/pred_IBD.matrix.RDS")
-if(!identical(pred,pred_test)) stop("Output of predict_IBD.matrix does not match stored output")
-
-#Numeric
-ib <- IBD$H1_P1[map$marker,3]
-pred <- predict_IBD(ib,map,interval = 10)
-#saveRDS(pred,"test/pred_IBD.numeric.RDS")
-if(!is.numeric(pred)) stop("Output of predict_IBD.numeric is not numeric")
-if(length(pred) != nrow(map)) stop("Output of predict_IBD.numeric has wrong length")
-pred_test <- readRDS("test/pred_IBD.numeric.RDS")
-if(!identical(pred,pred_test)) stop("Output of predict_IBD.numeric does not match stored output")

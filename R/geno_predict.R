@@ -81,38 +81,3 @@ genotype.list <- function(ibdlist,homologue,threshold = 0.8, ploidy = 2){
   colnames(geno) <- colnames(ibdlist[[1]])
   return(geno)
 }
-
-
-#Test ----------
-source("R/Utils.R")
-ibd <- readRDS("test/pred_IBD.list.RDS")
-hom <- read.table("test/test_hom.txt",header = T)
-
-#Test of list method
-geno <- genotype(ibd,hom,ploidy = 2)
-#saveRDS(geno,"test/test_geno.list.RDS")
-test_geno <- readRDS("test/test_geno.list.RDS")
-if(!identical(geno,test_geno)) stop("Output from genotype.list does not coincide with stored result")
-if(!all(ncol(geno) == sapply(ibd,ncol))) stop("Output from genotype.list does not contain as many columns as IBD input")
-
-#Test NA production
-ib <- lapply(ibd,function(i) i > 0.8)
-na_test <- all(is.na(geno) == (Reduce('+',ib) < 2))
-if(!na_test) stop("Output from genotype.list does not contain NAs in the correct places")
-
-#Matrix method
-ind_ibd <- sapply(ibd,'[',,1)
-geno <- genotype(ind_ibd,homologue = hom)
-#saveRDS(geno,"test/test_geno.matrix.RDS")
-test_geno <- readRDS("test/test_geno.matrix.RDS")
-if(!identical(geno,test_geno)) stop("Output from genotype.matrix does not coincide with stored result")
-if(!length(geno) == nrow(ind_ibd)) stop("Output from genotype.matrix does not contain as many genotypes as IBD input")
-
-#Test NA production
-should_be_na <- !rowSums(ind_ibd > 0.8) == 2
-is_na <- is.na(geno)
-if(!all(should_be_na == is_na)){
-  stop("Output from matrix.list does not contain NAs in the correct palces")
-}
-
-
