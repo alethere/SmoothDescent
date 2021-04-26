@@ -284,43 +284,65 @@ iterplot <- function(maplist,...){
 
 #IBD plots -------
 
-graphical_genotype <- function(IBD,...){
-
+#' Graphical genotype plotter
+#'
+#' Given an IBD matrix or a list of matrices, a graphical genotype
+#' plot is returned. Graphical genotypes allow to assess which homologue
+#' an individual has obtained, they highlight putative errors and show
+#' non-informative genotypes.
+#'
+#' @param IBD IBD matrix or list of IBD matrices. If IBD is a list, the
+#' names are used as subplot titles.
+#' @param only_informative logical, should only informative markers be plotted?
+#' False by default.
+#' @param ... Additional parameters to be passed to `plot`. For instance
+#' `cex.axis` or `main`.
+#'
+#' @return A plot containing graphical representations of IBD. Dark
+#' is a probability close to 1 and light is a probability close to 0.
+#' @export
+#'
+#' @examples
+graphical_genotype <- function(IBD,only_informative = F,...){
+  UseMethod("graphical_genotype",IBD)
 }
 
-graphical_genotype.matrix()
-
-graphical_genotype.list()
-
-
-#Testing -------------
-source("R/Utils.R")
-maplist <- list(pre = read.table("test/test_map.txt"),
-                flat = readRDS("test/test_flat_map.RDS")$locimap,
-                sphere = readRDS("test/test_sphere_map.RDS")$locimap)
-maplist$flat$marker <- maplist$flat$locus
-maplist$sphere$marker <- maplist$sphere$locus
-
-#Rec count
-ibdlist <- readRDS("test/calc_IBD.matrix.RDS")
-
-#Matrix method
-rc_mat <- rec_count(ibd = ibdlist[[1]],map = maplist$pre)
-#saveRDS(rc_mat,"test/rec_count.matrix.RDS")
-rc_test <- readRDS("test/rec_count.matrix.RDS")
-if(!identical(rc_mat,rc_test)){
-  stop("Rec_count.matrix output does not coincide with stored output")
-}
-if(sum(rc_mat$individual) != sum(rc_mat$on_map$count)){
-  stop("Recombination counts per individual and per window do not coincide")
+#' Title
+#'
+#' @param IBD
+#' @param cex.axis
+#' @param ...
+#'
+#' @return
+#' @export
+#'
+#' @examples
+graphical_genotype.matrix <- function(IBD,cex.axis = 0.8,...){
+  image(t(IBD),axes = F,...)
+  at <- seq(0,1,length.out = ncol(IBD))
+  axis(1,labels = colnames(IBD),las = 2,at = at,cex.axis = cex.axis)
 }
 
-#List method
-rc_list <- rec_count(ibd = ibdlist,map = maplist$pre)
-#saveRDS(rc_list,"test/rec_count.list.RDS")
-rc_test <- readRDS("test/rec_count.list.RDS")
-if(!identical(rc_list,rc_test)){
-  stop("Rec_count.mlist output does not coincide with stored output")
+#' Title
+#'
+#' @param IBD
+#' @param ex.axis
+#' @param main
+#' @param ...
+#'
+#' @return
+#' @export
+#'
+#' @examples
+graphical_genotype.list <- function(IBD,ex.axis = 0.8,main = NULL,...){
+  par(mfrow = c(1,length(IBD)),
+      mar = c(4,1,3,1),
+      oma = c(0,0,3,0))
+  for(i in seq_along(IBD)){
+    ib <- IBD[[i]]
+    graphical_genotype.matrix(ib,cex.axis = cex.axis,main = names(IBD)[i])
+  }
+  mtext(3,outer = T,text = main,cex = 1.3)
 }
 
 
