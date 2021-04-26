@@ -90,6 +90,7 @@ predict_IBD.numeric <- function(IBD,map,interval = 10){
 }
 
 #Test -------------
+source("R/Utils.R")
 map <- read.table("test/test_map.txt",header = T)
 IBD <- readRDS("test/calc_IBD.matrix.RDS")
 

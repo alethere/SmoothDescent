@@ -220,6 +220,7 @@ config <- function(g,ploidy = 2){
 }
 
 #Test --------
+source("R/Utils.R")
 dos <- as.matrix(read.table("test/test_geno.txt",header = T))
 dos <- dos[,-1:-2] #we take out parental genotypes
 hom <- as.matrix(read.table("test/test_hom.txt",header = T))
