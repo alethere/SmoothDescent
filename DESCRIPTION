@@ -1,0 +1,22 @@
+Package: SmoothDescent
+Type: Package
+Title: Application of map-based genotype correction algorithm Smooth Descent
+Version: 0.1.0
+Authors@R: person("Alejandro", "Thérèse Navarro", email = "alejandro.theresenavarro@wur.nl",
+  role = c("aut", "cre"))
+Description: SmoothDescent implements an algorithm of the same name that allows
+for genotype correction independently of ploidy, given a genetic map and a 
+homologue matrix (matrix of phased parental markers). 
+It allows to naïvely estimate Identity-By-Descent (IBD) probabilities, 
+using them to estimate putative erroneous genotypes and to impute corrected genotypes. 
+SmoothDescent also allows the estimation of a genetic maps with the help
+of `polymapR` and `MDSMap`. Finally, a set of diagnostic tools have been included
+to evaluate the results of the algorithm, including: recombination count,
+recombination-distance plots, graphical genotypes, and map comparison plots.
+License: GPL-2
+Encoding: UTF-8
+LazyData: true
+Imports: 
+  MDSMap,
+  polymapR,
+  assertthat

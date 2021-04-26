@@ -307,34 +307,21 @@ graphical_genotype <- function(IBD,only_informative = F,...){
   UseMethod("graphical_genotype",IBD)
 }
 
-#' Title
+#' Graphical genotype for a single matrix
 #'
-#' @param IBD
-#' @param cex.axis
-#' @param ...
-#'
-#' @return
+#' @describeIn graphical_genotype function for a single matrix.
 #' @export
-#'
-#' @examples
 graphical_genotype.matrix <- function(IBD,cex.axis = 0.8,...){
   image(t(IBD),axes = F,...)
   at <- seq(0,1,length.out = ncol(IBD))
   axis(1,labels = colnames(IBD),las = 2,at = at,cex.axis = cex.axis)
 }
 
-#' Title
+#' Graphical genotype for a list of matrices
 #'
-#' @param IBD
-#' @param ex.axis
-#' @param main
-#' @param ...
-#'
-#' @return
+#' @describeIn graphical_genotype function for a list of matrices.
 #' @export
-#'
-#' @examples
-graphical_genotype.list <- function(IBD,ex.axis = 0.8,main = NULL,...){
+graphical_genotype.list <- function(IBD,cex.axis = 0.8,main = NULL,...){
   par(mfrow = c(1,length(IBD)),
       mar = c(4,1,3,1),
       oma = c(0,0,3,0))
