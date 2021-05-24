@@ -141,7 +141,7 @@ mdsmap <- function(linkdf,ndim = 2){
   if(ndim == 2){
     newmap <- MDSMap::calc.maps.pc("tmp.map",weightfn = "lod2")
   }else if(ndim == 3){
-    newmap <- custom_calc.maps.sphere("tmp.map",weightfn = "lod2",p= 200)
+    newmap <- MDSMap::calc.maps.sphere("tmp.map",weightfn = "lod2",p= 200)
   }
   rem <- file.remove("tmp.map")
   return(newmap)

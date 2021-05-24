@@ -1,4 +1,5 @@
 R/make_dataset.R
+research/*
 .Rproj.user
 .Rhistory
 .RData

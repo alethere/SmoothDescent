@@ -51,6 +51,7 @@ smooth_descent <- function(geno,
                            p1name = NULL,
                            p2name = NULL,
                            prediction_interval = 10,
+                           prediction_threshold = 0.8,
                            error_threshold = 0.8,
                            verbose = T){
   talk <- function(msg){
@@ -85,6 +86,8 @@ smooth_descent <- function(geno,
 
 
   #Error estimation
+  if(is.null(p1name)) p1name <- 1
+  if(is.null(p2name)) p2name <- 2
   parentcols <- list(p1 = 1:ploidy,
                      p2 = (ploidy+1):ncol(homologue))
   genocols <- which(colnames(geno) %in% c(p1name,p2name))
@@ -110,7 +113,7 @@ smooth_descent <- function(geno,
   talk("Detecting errors\n")
   errors <- lapply(1:length(obsIBD),function(i){
     err <- abs(obsIBD[[i]] - predIBD[[i]]) > error_threshold
-    err | is.na(obsIBD[[i]])
+    err | is.na(obsIBD[[i]]) | is.na(predIBD[[i]])
   })
   tots <- sapply(errors,sum)
 
@@ -137,7 +140,7 @@ smooth_descent <- function(geno,
     talk("Updating genotypes\n")
     new_geno <- genotype(newIBD,
                          homologue = homologue,
-                         threshold = 0.8,
+                         threshold = prediction_threshold,
                          ploidy = ploidy)
     new_geno <- new_geno[rownames(geno),colnames(geno[,-genocols])]
     new_geno[is.na(new_geno)] <- geno[,-genocols][is.na(new_geno)]
@@ -231,6 +234,7 @@ smooth_map <- function(geno,
                       p1name = NULL,
                       p2name = NULL,
                       prediction_interval = 10,
+                      prediction_threshold = 0.8,
                       error_threshold = 0.8,
                       ncores = 10,
                       mapping_ndim = 2,
@@ -266,7 +270,8 @@ smooth_map <- function(geno,
 
   res <- smooth_descent(geno = geno, homologue = homologue, map = map,
                  ploidy = ploidy, p1name = p1name, p2name = p2name,
-                 prediction_interval = prediction_interval, error_threshold = error_threshold,
+                 prediction_interval = prediction_interval, prediction_threshold = prediction_threshold,
+                 error_threshold = error_threshold,
                  verbose = verbose)
 
   talk("Estimating new linkage\n")

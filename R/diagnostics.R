@@ -311,7 +311,12 @@ graphical_genotype <- function(IBD,only_informative = F,...){
 #'
 #' @describeIn graphical_genotype function for a single matrix.
 #' @export
-graphical_genotype.matrix <- function(IBD,cex.axis = 0.8,...){
+graphical_genotype.matrix <- function(IBD,cex.axis = 0.8,only_informative = F,...){
+  if(only_informative){
+    non_inf <- (IBD > 0.3 & IBD < 0.7) | is.na(IBD)
+    non_inf <- rowSums(non_inf) == ncol(IBD)
+    IBD <- IBD[!non_inf,]
+  }
   image(t(IBD),axes = F,...)
   at <- seq(0,1,length.out = ncol(IBD))
   axis(1,labels = colnames(IBD),las = 2,at = at,cex.axis = cex.axis)
@@ -321,32 +326,33 @@ graphical_genotype.matrix <- function(IBD,cex.axis = 0.8,...){
 #'
 #' @describeIn graphical_genotype function for a list of matrices.
 #' @export
-graphical_genotype.list <- function(IBD,cex.axis = 0.8,main = NULL,...){
+graphical_genotype.list <- function(IBD,cex.axis = 0.8,main = NULL,only_informative = F,...){
   par(mfrow = c(1,length(IBD)),
       mar = c(4,1,3,1),
       oma = c(0,0,3,0))
   for(i in seq_along(IBD)){
     ib <- IBD[[i]]
-    graphical_genotype.matrix(ib,cex.axis = cex.axis,main = names(IBD)[i])
+    graphical_genotype.matrix(ib,cex.axis = cex.axis,main = names(IBD)[i],
+                              only_informative = only_informative,...)
   }
   mtext(3,outer = T,text = main,cex = 1.3)
 }
 
 
-#Reorder tau
-tau <- reorder_tau(maplist$pre,maplist$flat)
-if(round(tau,4) != 0.89) stop("Obtained reorder tau and stored reorder tau do not coincide")
-
-#Recdist plot
-map <- read.table("test/test_map.txt")
-linkdf <- readRDS("test/test_linkdf.RDS")
-recdist <- recdist_calc(map,linkdf)
-recdist_plot(recdist)
-
-
-#Iterplot
-maplist$flat$marker <- maplist$flat$locus
-maplist$sphere$marker <- maplist$sphere$locus
-iterplot(maplist,main = "Testing")
+# #Reorder tau
+# tau <- reorder_tau(maplist$pre,maplist$flat)
+# if(round(tau,4) != 0.89) stop("Obtained reorder tau and stored reorder tau do not coincide")
+#
+# #Recdist plot
+# map <- read.table("test/test_map.txt")
+# linkdf <- readRDS("test/test_linkdf.RDS")
+# recdist <- recdist_calc(map,linkdf)
+# recdist_plot(recdist)
+#
+#
+# #Iterplot
+# maplist$flat$marker <- maplist$flat$locus
+# maplist$sphere$marker <- maplist$sphere$locus
+# iterplot(maplist,main = "Testing")
 
 

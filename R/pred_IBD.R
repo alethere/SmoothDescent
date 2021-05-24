@@ -58,7 +58,28 @@ predict_IBD.matrix <- function(IBD,map,interval = 10){
   if(!"marker" %in% colnames(map)) stop("Map data.frame should contain a \"marker\" column")
   if(!"position" %in% colnames(map)) stop("Map data.frame should contain a \"position\" column")
 
-  pred <- apply(IBD,2,predict_IBD,map = map, interval = interval)
+  #This can be done faster in a different way
+  #pred <- apply(IBD,2,predict_IBD,map = map, interval = interval)
+
+  #First compute the markers that should go in each interval
+  IBD <- IBD[map$marker,]
+  IBD[IBD > 0.3 & IBD < 0.7] <- NA
+
+  pred <- lapply(1:nrow(map),function(i){
+    #Compute weights for each marker (they are the same accross columns)
+    distance <- abs(map$position[i]-map$position)
+    weights <- 1 - distance/100
+    close_marks <- distance < interval & distance != 0
+
+    #The compute each row at once
+    ib <- IBD[close_marks,,drop = F]
+    weights <- weights[close_marks,drop = F]
+    wibd <- ib*weights
+    wmat <- matrix(rep(weights,ncol(ib)),ncol = ncol(ib))
+    wmat[is.na(ib)] <- NA
+    colSums(wibd,na.rm = T)/colSums(wmat,na.rm = T)
+  })
+  pred <- do.call(rbind,pred)
   rownames(pred) <- rownames(IBD)
   return(pred)
 }

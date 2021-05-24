@@ -40,18 +40,18 @@ genotype <- function(IBD,homologue,threshold = 0.8, ploidy = 2){
 #'
 #' @describeIn genotype Method for a single individual
 genotype.matrix <- function(ibd,homologue,threshold = 0.8,ploidy = 2){
-  if(is.matrix(ibd)){
-    assertthat::assert_that(all(colnames(homologue) %in% colnames(ibd)))
-  }else{
-    assertthat::assert_that(all(colnames(homologue) %in% names(ibd)))
-  }
+  # if(is.matrix(ibd)){
+  #   assertthat::assert_that(all(colnames(homologue) %in% colnames(ibd)))
+  # }else{
+  #   assertthat::assert_that(all(colnames(homologue) %in% names(ibd)))
+  # }
 
   #Above threshold are turned into 1
   ibd[ibd >= threshold] <- 1
   ibd[ibd <= threshold] <- 0
 
   marks <- intersect(rownames(homologue),rownames(ibd))
-  ibd <- ibd[marks,colnames(homologue)]
+  ibd <- ibd[marks,]
   homologue <- homologue[marks,]
   #Genotypes are calculated
   geno <- rowSums(ibd*homologue)

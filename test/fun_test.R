@@ -173,7 +173,6 @@ pred_test <- readRDS("test/pred_IBD.numeric.RDS")
 if(!identical(pred,pred_test)) stop("Output of predict_IBD.numeric does not match stored output")
 
 #Smooth wrappers ----------------
-#Test --------
 geno <- read.table("test/test_geno.txt",header = T)
 map <- read.table("test/test_map.txt",header = T)
 hom <- read.table("test/test_hom.txt",header = T)
