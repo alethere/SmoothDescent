@@ -113,9 +113,10 @@ smooth_descent <- function(geno,
   talk("Detecting errors\n")
   errors <- lapply(1:length(obsIBD),function(i){
     err <- abs(obsIBD[[i]] - predIBD[[i]]) > error_threshold
-    err | is.na(obsIBD[[i]]) | is.na(predIBD[[i]])
+    err | is.na(obsIBD[[i]])
   })
-  tots <- sapply(errors,sum)
+  names(errors) <- names(obsIBD)
+  tots <- sapply(errors,sum,na.rm = T)
 
   if(sum(tots) == 0){
     warning("No errors detected, no smoothing performed")
@@ -132,7 +133,10 @@ smooth_descent <- function(geno,
     newIBD <- lapply(1:length(obsIBD),function(i){
       ibd <- obsIBD[[i]]
       if(length(ibd) == 0) return(ibd)
-      ibd[errors[[i]]] <- round(predIBD[[i]][errors[[i]]])
+      err <- errors[[i]]
+      err[is.na(err)] <- F
+      #if probabilities are rounded, we are forcing a prediction_threshold = 0.5
+      ibd[err] <- predIBD[[i]][err]
       return(ibd)
     })
     names(newIBD) <- names(obsIBD)
@@ -142,6 +146,7 @@ smooth_descent <- function(geno,
                          homologue = homologue,
                          threshold = prediction_threshold,
                          ploidy = ploidy)
+
     new_geno <- new_geno[rownames(geno),colnames(geno[,-genocols])]
     new_geno[is.na(new_geno)] <- geno[,-genocols][is.na(new_geno)]
     new_geno <- cbind(geno[,genocols],new_geno)

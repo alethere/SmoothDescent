@@ -39,26 +39,29 @@ genotype <- function(IBD,homologue,threshold = 0.8, ploidy = 2){
 #' Genotype calculator for a single individual
 #'
 #' @describeIn genotype Method for a single individual
-genotype.matrix <- function(ibd,homologue,threshold = 0.8,ploidy = 2){
-  # if(is.matrix(ibd)){
-  #   assertthat::assert_that(all(colnames(homologue) %in% colnames(ibd)))
+genotype.matrix <- function(IBD,homologue,threshold = 0.8,ploidy = 2){
+  # if(is.matrix(IBD)){
+  #   assertthat::assert_that(all(colnames(homologue) %in% colnames(IBD)))
   # }else{
-  #   assertthat::assert_that(all(colnames(homologue) %in% names(ibd)))
+  #   assertthat::assert_that(all(colnames(homologue) %in% names(IBD)))
   # }
 
   #Above threshold are turned into 1
-  ibd[ibd >= threshold] <- 1
-  ibd[ibd <= threshold] <- 0
+  IBD[IBD >= threshold] <- 1
+  IBD[IBD <= 1-threshold] <- 0
 
-  marks <- intersect(rownames(homologue),rownames(ibd))
-  ibd <- ibd[marks,]
+  marks <- intersect(rownames(homologue),rownames(IBD))
+  IBD <- IBD[marks,]
   homologue <- homologue[marks,]
   #Genotypes are calculated
-  geno <- rowSums(ibd*homologue)
+  perhom_geno <- IBD*homologue
+  not_certain <- (perhom_geno != 0 & perhom_geno != 1)
+  not_certain <- apply(not_certain, 1, any) | rowSums(IBD) != ploidy
+  geno <- rowSums(perhom_geno)
 
   #There must be two columns per individual over the threshold
   #This is somehow problematic though, what if two columns of p1 instead of 1 in p1 and one in p2?
-  not_certain <- rowSums(ibd > threshold) < ploidy
+  # not_certain <- rowSums(IBD > threshold) < ploidy
   geno[not_certain] <- NA
 
   return(geno)
@@ -67,17 +70,17 @@ genotype.matrix <- function(ibd,homologue,threshold = 0.8,ploidy = 2){
 #' Genotype calculator for lists
 #'
 #' @describeIn genotype Method for a list of IBD matrices
-genotype.list <- function(ibdlist,homologue,threshold = 0.8, ploidy = 2){
-  if(!all(colnames(homologue) %in% names(ibdlist))) stop("IBD list should contain one element per column in homologue matrix")
+genotype.list <- function(IBD,homologue,threshold = 0.8, ploidy = 2){
+  if(!all(colnames(homologue) %in% names(IBD))) stop("IBD list should contain one element per column in homologue matrix")
 
   parentcols <- list(p1 = 1:ploidy,
                      p2 = (ploidy + 1):(ploidy*2))
 
-  ind_ibd <- lapply(1:ncol(ibdlist[[1]]),function(i){
-    ib <- sapply(ibdlist,'[',,i)
+  ind_ibd <- lapply(1:ncol(IBD[[1]]),function(i){
+    ib <- sapply(IBD,'[',,i)
   })
   geno <- sapply(ind_ibd,genotype.matrix,homologue = homologue,
                  threshold = threshold, ploidy = ploidy)
-  colnames(geno) <- colnames(ibdlist[[1]])
+  colnames(geno) <- colnames(IBD[[1]])
   return(geno)
 }
