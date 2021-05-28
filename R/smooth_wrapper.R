@@ -263,15 +263,15 @@ smooth_map <- function(geno,
 
   #We should eliminate markers that are distant from everything
   #For the remapping process, distant markers should be eliminated
-  closeness <- sapply(map$position,function(p){
-    mean(sort(abs(p - map$position))[1:5])
-  })
-  far_marks <- closeness >= 3
-  if(any(far_marks)){
-    warning(sum(far_marks)," markers were eliminated from the map due to large neighbour distance: ",
-            paste(map$marker[far_marks],collapse = " "))
-  }
-  map <- map[!far_marks,]
+  # closeness <- sapply(map$position,function(p){
+  #   mean(sort(abs(p - map$position))[1:5])
+  # })
+  # far_marks <- closeness >= 3
+  # if(any(far_marks)){
+  #   warning(sum(far_marks)," markers were eliminated from the map due to large neighbour distance: ",
+  #           paste(map$marker[far_marks],collapse = " "))
+  # }
+  # map <- map[!far_marks,]
 
   res <- smooth_descent(geno = geno, homologue = homologue, map = map,
                  ploidy = ploidy, p1name = p1name, p2name = p2name,

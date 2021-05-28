@@ -169,6 +169,10 @@ recdist_calc <- function(map,linkdf){
                          marker_b = linkdf$marker_b,
                          LOD = linkdf$LOD_independence)
 
+  model <- lm(distance ~poly(recombination,2),data = recdist)
+  r2 <- summary(model)$r.squared
+  attr(recdist,"r2") <- r2
+
   return(recdist)
 }
 
@@ -189,12 +193,16 @@ recdist_calc <- function(map,linkdf){
 #' @export
 #'
 #' @examples
-recdist_plot <- function(recdist,...){
+recdist_plot <- function(recdist,main =NULL,...){
   sp <- lm(distance ~ poly(recombination,2),data = recdist)
+  r2 <- summary(sp)$r.squared
   new_x <- seq(0,0.5,by = 0.01)
   pred <- predict(sp,newdata = data.frame(recombination = new_x))
 
-  plot(recdist$recombination,recdist$distance,xlab = "recombination",ylab = "distance",...)
+  main <- paste(main,sprintf("R2: %.2f%%",r2*100))
+  plot(recdist$recombination,recdist$distance,xlab = "recombination",
+       ylab = "distance",main = main,...)
+
   points(new_x,pred, type = "l",col = "red3",lwd =  3)
 }
 
