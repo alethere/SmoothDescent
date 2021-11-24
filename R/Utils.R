@@ -9,10 +9,13 @@
 #' @param index numeric, character or logical to be applied to each element of list
 #' @param simplify should the output be simplified
 #'
-#' @return
+#' @return list, vector or matrix of extracted objects
 #' @export
 #'
 #' @examples
+#' example <- list(data.frame(A = "first dataframe", B = "second argument"),
+#' data.frame(A = "second dataframe", B = "second argument"))
+#' extract(example,"A")
 extract <- function(l,index = 1,simplify = T){
   sapply(l,'[[',index,simplify = simplify)
 }
@@ -32,10 +35,8 @@ extract <- function(l,index = 1,simplify = T){
 #' @param fill value to put inside the output matrix for those rows
 #' that were present in only one of the two matrices.
 #'
-#' @return
+#' @return fused matrix
 #' @export
-#'
-#' @examples
 rowfuse <- function(mat1,mat2,fill = NA){
   rows <- unique(c(rownames(mat1),rownames(mat2)))
   resmat <- matrix(fill,ncol = ncol(mat1) + ncol(mat2),

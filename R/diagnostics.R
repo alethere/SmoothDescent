@@ -31,12 +31,20 @@
 #' @export
 #'
 #' @examples
+#' data("smooth_descent")
+#' IBD <- sdescent$predIBD
+#' map <- sdescent$oldmap
+#'
+#' #For a single matrix
+#' rec <- rec_count(IBD[[1]],map)
+#' #For all homologues
+#' rec <- rec_count(IBD,map)
 rec_count <- function(ibd,map,non_inf = c(0.3,0.7)){
   if("data.frame" %in% class(ibd)) ibd <- as.matrix(ibd)
   UseMethod("rec_count",ibd)
 }
 
-#' Genotype calculator for a single IBD matrix
+#' Recombination counter for a single IBD matrix
 #'
 #' @describeIn rec_count Recombination count for a single IBD matrix.
 rec_count.matrix <- function(ibd,map,non_inf = c(0.3,0.7)){
@@ -48,13 +56,13 @@ rec_count.matrix <- function(ibd,map,non_inf = c(0.3,0.7)){
   }
 
   #Recombination test
-  map <- subset(map,marker %in% rownames(ibd))
+  map <- subset(map,map$marker %in% rownames(ibd))
   map <- map[order(map$position),]
   pos <- map$position
   names(pos) <- map$marker
   ibd <- ibd[map$marker,]
   ind_recs <- apply(ibd,2,function(ib_ind){
-    ib_ind <- ib_ind[ib_ind < non_inf[1] | ib_ind > non_inf[2]]
+    ib_ind <- ib_ind[(ib_ind < non_inf[1] | ib_ind > non_inf[2]) & !is.na(ib_ind)]
     ib_ind <- round(ib_ind)
     rec_pos <- ib_ind[-1] != ib_ind[-length(ib_ind)]
     ind = sum(rec_pos)
@@ -103,7 +111,7 @@ rec_count.list <- function(ibd,map,non_inf = c(0.3,0.7)){
 #' Reorder parameter calculator
 #'
 #' Given two maps with the same markers, calculates the
-#' reordering parameter \tau between them. This is based on the
+#' reordering parameter \eqn{\tau} between them. This is based on the
 #' rank-correlation, or Kendall correlation.
 #'
 #' @param oldmap a data.frame containing at least "marker" and "position" columns.
@@ -114,6 +122,12 @@ rec_count.list <- function(ibd,map,non_inf = c(0.3,0.7)){
 #' @export
 #'
 #' @examples
+#' data("iter_smooth_descent")
+#' old <- sd_iter$iter1$oldmap
+#' new <- sd_iter$iter1$newmap
+#'
+#' reorder_tau(old,new)
+#'
 reorder_tau <- function(oldmap,newmap){
   in_oldmap <- newmap$marker %in% oldmap$marker
   if(!all(in_oldmap)){
@@ -148,15 +162,21 @@ reorder_tau <- function(oldmap,newmap){
 #' for the name of the first marker; "marker_b" for the name of the second marker;
 #' and "LOD" for the logarithm of odds score for that recombination estimate.
 #'
-#' @describeIn recdist_plot
 #' @export
 #'
 #' @examples
+#' data("linkage")
+#' data("map")
+#' recdist <- recdist_calc(map,linkdf)
+#'
 recdist_calc <- function(map,linkdf){
   in_linkdf <- (map$marker %in% linkdf$marker_a) | (map$marker %in% linkdf$marker_b)
   if(!all(in_linkdf)){
     stop(paste0("Some markers found in map were not found in linkdf:\n",
                paste0(map$marker[!in_linkdf],collapse = " ")))
+  }
+  if(!all(c("r","marker_a","marker_b") %in% colnames(linkdf))){
+    stop("linkdf must contain columnames r, marker_a and marker_b")
   }
   pos <- map$position
   names(pos) <- map$marker
@@ -187,12 +207,22 @@ recdist_calc <- function(map,linkdf){
 #'
 #' @param recdist data.frame containing at least columns "recombination" and "distance".
 #' Can be obtained from `recdist_calc`.
+#' @param main title of the plot.
 #' @param ... additional parameters passed onto `plot`
 #'
-#' @describeIn recdist_calc
+#' @describeIn recdist_calc plotting function for the output of `recdist_calc`
 #' @export
 #'
 #' @examples
+#' #One can calculate it
+#' data("linkage")
+#' data("map")
+#' recdist <- recdist_calc(map,linkdf)
+#' recdist_plot(recdist, main = "Example 1")
+#'
+#' #But it is also provided as wrapper output
+#' data("iter_smooth_descent")
+#' recdist_plot(sd_iter$iter1$recdist)
 recdist_plot <- function(recdist,main =NULL,...){
   sp <- lm(distance ~ poly(recombination,2),data = recdist)
   r2 <- summary(sp)$r.squared
@@ -204,6 +234,7 @@ recdist_plot <- function(recdist,main =NULL,...){
        ylab = "distance",main = main,...)
 
   points(new_x,pred, type = "l",col = "red3",lwd =  3)
+  return(r2*100)
 }
 
 #Iteration maps ---------
@@ -225,14 +256,10 @@ recdist_plot <- function(recdist,main =NULL,...){
 #' @export
 #'
 #' @examples
-#' maplist <- list(pre = read.table("test/test_map.txt"),
-#' flat = readRDS("test/test_flat_map.RDS")$locimap,
-#' sphere = readRDS("test/test_sphere_map.RDS")$locimap)
-#' maplist$flat$marker <- maplist$flat$locus
-#' maplist$sphere$marker <- maplist$sphere$locus
+#' data("iter_smooth_descent")
 #'
-#' iterplot(maplist,main = "Example")
-#'
+#' maplist <- extract(sd_iter,"newmap", simplify = FALSE)
+#' iterplot(maplist, main = "Example iteration plot")
 iterplot <- function(maplist,...){
   have_pos <- sapply(maplist,hasName,"position")
   if(!all(have_pos)) stop("Not all maps have the position column")
@@ -258,7 +285,7 @@ iterplot <- function(maplist,...){
       map <- maplist[[i/2+1]]
       co <- coo[i+1,]
       rect(xleft = co$left,xright = co$right,
-           ytop = min(map$position),ybot = max(map$position),
+           ytop = min(map$position),ybottom = max(map$position),
            col = "lightgrey",border = NA)
       segments(x0 = co$left, x1 = co$right,y0 = map$position)
 
@@ -303,6 +330,12 @@ iterplot <- function(maplist,...){
 #' names are used as subplot titles.
 #' @param only_informative logical, should only informative markers be plotted?
 #' False by default.
+#' @param cex.axis size of the bottom labels.
+#' @param non_inf numeric, lower and upper probability boundaries to consider an
+#' IBD probability non-informative (if they fall within the threshold they will be
+#' ignored during prediction). Defaults to 0.3 - 0.7. Symmetrical boundaries are
+#' recommended but not necessary.
+#' @param main title to display in the plot.
 #' @param ... Additional parameters to be passed to `plot`. For instance
 #' `cex.axis` or `main`.
 #'
@@ -311,17 +344,25 @@ iterplot <- function(maplist,...){
 #' @export
 #'
 #' @examples
-graphical_genotype <- function(IBD,only_informative = F,...){
+#' data("smooth_descent")
+#' IBD <- sdescent$predIBD
+#'
+#' #One single homologue
+#' graphical_genotype(IBD[[1]], only_informative = TRUE)
+#' #Or all homologues
+#' graphical_genotype(IBD, only_informative = TRUE)
+graphical_genotype <- function(IBD,only_informative = F,cex.axis = 0.8,main = NULL,
+                               non_inf = c(0.3,0.7),...){
   UseMethod("graphical_genotype",IBD)
 }
 
 #' Graphical genotype for a single matrix
 #'
 #' @describeIn graphical_genotype function for a single matrix.
-#' @export
-graphical_genotype.matrix <- function(IBD,cex.axis = 0.8,only_informative = F,...){
+graphical_genotype.matrix <- function(IBD,only_informative = F,cex.axis = 0.8,main = NULL,
+                                      non_inf = c(0.3,0.7),...){
   if(only_informative){
-    non_inf <- (IBD > 0.3 & IBD < 0.7) | is.na(IBD)
+    non_inf <- (IBD > non_inf[1] & IBD < non_inf[2]) | is.na(IBD)
     non_inf <- rowSums(non_inf) == ncol(IBD)
     IBD <- IBD[!non_inf,]
   }
@@ -333,34 +374,15 @@ graphical_genotype.matrix <- function(IBD,cex.axis = 0.8,only_informative = F,..
 #' Graphical genotype for a list of matrices
 #'
 #' @describeIn graphical_genotype function for a list of matrices.
-#' @export
-graphical_genotype.list <- function(IBD,cex.axis = 0.8,main = NULL,only_informative = F,...){
+graphical_genotype.list <- function(IBD,only_informative = F,cex.axis = 0.8,main = NULL,
+                                    non_inf = c(0.3,0.7),...){
   par(mfrow = c(1,length(IBD)),
       mar = c(4,1,3,1),
       oma = c(0,0,3,0))
   for(i in seq_along(IBD)){
     ib <- IBD[[i]]
     graphical_genotype.matrix(ib,cex.axis = cex.axis,main = names(IBD)[i],
-                              only_informative = only_informative,...)
+                              only_informative = only_informative,non_inf = non_inf,...)
   }
   mtext(3,outer = T,text = main,cex = 1.3)
 }
-
-
-# #Reorder tau
-# tau <- reorder_tau(maplist$pre,maplist$flat)
-# if(round(tau,4) != 0.89) stop("Obtained reorder tau and stored reorder tau do not coincide")
-#
-# #Recdist plot
-# map <- read.table("test/test_map.txt")
-# linkdf <- readRDS("test/test_linkdf.RDS")
-# recdist <- recdist_calc(map,linkdf)
-# recdist_plot(recdist)
-#
-#
-# #Iterplot
-# maplist$flat$marker <- maplist$flat$locus
-# maplist$sphere$marker <- maplist$sphere$locus
-# iterplot(maplist,main = "Testing")
-
-
