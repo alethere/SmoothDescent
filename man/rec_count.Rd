@@ -44,3 +44,13 @@ calculated per individual and per window. A genetic map is required.
 for all parental homologues.
 }}
 
+\examples{
+data("smooth_descent")
+IBD <- sdescent$predIBD
+map <- sdescent$oldmap
+
+#For a single matrix
+rec <- rec_count(IBD[[1]],map)
+#For all homologues
+rec <- rec_count(IBD,map)
+}

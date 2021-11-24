@@ -2,35 +2,30 @@
 % Please edit documentation in R/mapping.R
 \name{linkdf_shortcut}
 \alias{linkdf_shortcut}
-\title{Linkage estimation}
+\title{Linkdf shortcut}
 \usage{
-linkdf_shortcut(geno, p1name, p2name, ploidy, ncores = 1)
+linkdf_shortcut(geno, ploidy, p1name, p2name, ncores = 1)
 }
 \arguments{
-\item{geno}{Genotype matrix with individuals on columns and markers on rows. Colum names
-are expected.}
+\item{geno}{numeric data.frame or matrix, with marker names as rownames and
+individual names as column names.}
 
-\item{p1name}{Column name of the first parent.}
+\item{ploidy}{numeric, ploidy of both parents.}
 
-\item{p2name}{Column name of the second parent.}
+\item{p1name}{character, name of the first parent.}
 
-\item{ploidy}{Ploidy of the population (only even ploidies identical for the whole population
-are allowed)}
+\item{p2name}{characther, name of the second parent.}
 
-\item{ncores}{Number of cores to use in the linkage calculation. It is recommended to
-set this number at most to the number of available cores - 1.}
+\item{ncores}{numeric, number of threads to use in the linakge calculation.}
 }
 \value{
-Data.frame containing recombination frequency, LOD estimate and LOD for independence
-for each pair of markers. See `polymapR::linkage()` for more information.
+a linkage dataframe. Some estimates might be duplicated,
+since they are calculated for both parents.
 }
 \description{
-The `polymapR::linkage()` allows to calculate pair-wise linkage estimates between markers
-using the `MDSmap` package. However, it requires to be run once for each marker pair
-combination (for 1x0 - 1x0, 1x0 - 1x1, 1x1 - 0x1 ...). To simplify this process one can
-use this shortcut, which analyzes the present genotypes and launches `linkage()` as many
-times as necessary to obtain all meaningful pair-wise estimates (for instance, 1x0 - 0x1
-pairs are ignored since they are always independent). It returns a data-frame
-with all pair-wise links.
+Shortcut to calculate the linkage data.frame using polymapR's approach
+to autopolyploid linkage calculation. Random pairing is assumed, it only
+considers one linkage group at a time and returns linkage both from
+parent1 to parent2 and viceversa. Importantly, markers for which
+parental genotype does not match offspring segregation are eliminated.
 }
-\keyword{internal}

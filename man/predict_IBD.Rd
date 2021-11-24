@@ -7,13 +7,13 @@
 \alias{predict_IBD.numeric}
 \title{Predict IBD}
 \usage{
-predict_IBD(IBD, map, interval = 10)
+predict_IBD(IBD, map, interval = 10, method = "kosambi", non_inf = c(0.3, 0.7))
 
-\method{predict_IBD}{list}(IBD, map, interval = 10)
+\method{predict_IBD}{list}(IBD, map, interval = 10, method = "kosambi", non_inf = c(0.3, 0.7))
 
-\method{predict_IBD}{matrix}(IBD, map, interval = 10)
+\method{predict_IBD}{matrix}(IBD, map, interval = 10, method = "kosambi", non_inf = c(0.3, 0.7))
 
-\method{predict_IBD}{numeric}(IBD, map, interval = 10)
+\method{predict_IBD}{numeric}(IBD, map, interval = 10, method = "kosambi", non_inf = c(0.3, 0.7))
 }
 \arguments{
 \item{IBD}{observed IBD. Can be given as a vector containing the
@@ -23,6 +23,16 @@ of matrices. Matrices must contain rownames and columnames.}
 \item{map}{data.frame containing "marker" and "position" columns at least.}
 
 \item{interval}{numeric indicating the interval size to be used in prediction.}
+
+\item{method}{string indicating the mapping function used to calculate weights.
+Either "kosambi", "haldane" or "morgan". Kosambi takes into account chiasma interference,
+Haldane is the most common mapping function and Morgan assumes a linear relationship
+between distance and recombination (is inaccurate for large distances).}
+
+\item{non_inf}{numeric vector of two digits, containing the lower and upper
+bound for probabilities to be considered non-informative. These probabilities will be
+ignored during prediction. By default 0.3 and 0.7. Symmetric and stringent thresholds
+are recommended.}
 }
 \value{
 the output will have the same format as the input given. That is, an input
@@ -31,7 +41,10 @@ will return a list of matrices.
 }
 \description{
 IBD prediction algorithm, performs a distance-informed weighted average using
-a genetic map. IBD probabilities between 0.3 and 0.7 are ignored as non-informative.
+a genetic map. Weights are calculated as a proportion of the non-recombination
+probability between two markers, which are estimated using mapping functions (Kosambi's,
+Haldane's or Morgan's). Low-informative IBD probabilities are ignored, by default probabilities
+between 0.3 and 0.7 are considered low-informative.
 }
 \section{Methods (by class)}{
 \itemize{
@@ -42,3 +55,17 @@ a genetic map. IBD probabilities between 0.3 and 0.7 are ignored as non-informat
 \item \code{numeric}: Function for a numeric vector
 }}
 
+\examples{
+data("genotype")
+geno <- geno[,-1:-2] #we take out parental genotypes
+data("homologue")
+data(map)
+IBD <- calc_IBD(geno,hom[,1:2],hom[,3:4], ploidy = 2)
+
+#One homologue of one individual
+pred <- predict_IBD(IBD[[1]][,1], map)
+#One homologue for all individuals
+pred <- predict_IBD(IBD[[1]], map)
+#Or all homologues
+pred <- predict_IBD(IBD, map)
+}

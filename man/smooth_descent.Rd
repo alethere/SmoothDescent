@@ -12,7 +12,9 @@ smooth_descent(
   p1name = NULL,
   p2name = NULL,
   prediction_interval = 10,
+  prediction_threshold = 0.8,
   error_threshold = 0.8,
+  non_inf = c(0.3, 0.7),
   verbose = T
 )
 }
@@ -38,8 +40,17 @@ If it's not specified it will be taken as the name of the second column.}
 \item{prediction_interval}{numeric, interval to be used during the IBD prediction
 step. It should be specified in the same units as the "position" in the map.}
 
+\item{prediction_threshold}{float, probability threshold for imputing new genotypes.
+All new genotypes with a probability under this threshold will be considered uncertain.
+Defaults to 0.8.}
+
 \item{error_threshold}{numeric, threshold over which a marker is considered erroneous.
 Usually 0.8 should be good enough to be sensitive but stringent (not have false positives)}
+
+\item{non_inf}{numeric, lower and upper probability boundaries to consider an
+IBD probability non-informative (if they fall within the threshold they will be
+ignored during prediction). Defaults to 0.3 - 0.7. Symmetrical boundaries are
+recommended but not necessary.}
 
 \item{verbose}{logical, should smooth descent report the steps it takes?}
 }
@@ -61,4 +72,14 @@ and genotype prediction functions according to the Smooth Descent algorithm.
 Provided with a genotype matrix, a parental homologue assignment matrix and
 a genetic map, it is able to estimate putative genotyping errors as well
 as recombination counts and imputed genotypes with less errors.
+}
+\examples{
+
+data("genotype")
+data("homologue")
+data("map")
+
+res <- smooth_descent(geno,hom,map, ploidy = 2, p1name = "P1", p2name = "P2")
+
+
 }

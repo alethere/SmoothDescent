@@ -6,11 +6,32 @@
 \alias{graphical_genotype.list}
 \title{Graphical genotype plotter}
 \usage{
-graphical_genotype(IBD, only_informative = F, ...)
+graphical_genotype(
+  IBD,
+  only_informative = F,
+  cex.axis = 0.8,
+  main = NULL,
+  non_inf = c(0.3, 0.7),
+  ...
+)
 
-\method{graphical_genotype}{matrix}(IBD, cex.axis = 0.8, ...)
+\method{graphical_genotype}{matrix}(
+  IBD,
+  only_informative = F,
+  cex.axis = 0.8,
+  main = NULL,
+  non_inf = c(0.3, 0.7),
+  ...
+)
 
-\method{graphical_genotype}{list}(IBD, cex.axis = 0.8, main = NULL, ...)
+\method{graphical_genotype}{list}(
+  IBD,
+  only_informative = F,
+  cex.axis = 0.8,
+  main = NULL,
+  non_inf = c(0.3, 0.7),
+  ...
+)
 }
 \arguments{
 \item{IBD}{IBD matrix or list of IBD matrices. If IBD is a list, the
@@ -18,6 +39,15 @@ names are used as subplot titles.}
 
 \item{only_informative}{logical, should only informative markers be plotted?
 False by default.}
+
+\item{cex.axis}{size of the bottom labels.}
+
+\item{main}{title to display in the plot.}
+
+\item{non_inf}{numeric, lower and upper probability boundaries to consider an
+IBD probability non-informative (if they fall within the threshold they will be
+ignored during prediction). Defaults to 0.3 - 0.7. Symmetrical boundaries are
+recommended but not necessary.}
 
 \item{...}{Additional parameters to be passed to `plot`. For instance
 `cex.axis` or `main`.}
@@ -39,3 +69,12 @@ non-informative genotypes.
 \item \code{list}: function for a list of matrices.
 }}
 
+\examples{
+data("smooth_descent")
+IBD <- sdescent$predIBD
+
+#One single homologue
+graphical_genotype(IBD[[1]], only_informative = TRUE)
+#Or all homologues
+graphical_genotype(IBD, only_informative = TRUE)
+}

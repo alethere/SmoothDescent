@@ -17,6 +17,14 @@ A single parameter indicating the rank order correlation.
 }
 \description{
 Given two maps with the same markers, calculates the
-reordering parameter \tau between them. This is based on the
+reordering parameter \eqn{\tau} between them. This is based on the
 rank-correlation, or Kendall correlation.
+}
+\examples{
+data("iter_smooth_descent")
+old <- sd_iter$iter1$oldmap
+new <- sd_iter$iter1$newmap
+
+reorder_tau(old,new)
+
 }

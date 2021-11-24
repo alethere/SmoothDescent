@@ -14,9 +14,14 @@ extract(l, index = 1, simplify = T)
 \item{simplify}{should the output be simplified}
 }
 \value{
-
+list, vector or matrix of extracted objects
 }
 \description{
 Given a list of identical objects, extract the same index of each object.
 This is a shortcut for `sapply(list,'[[',index)`
+}
+\examples{
+example <- list(data.frame(A = "first dataframe", B = "second argument"),
+data.frame(A = "second dataframe", B = "second argument"))
+extract(example,"A")
 }

@@ -6,45 +6,47 @@
 \alias{calc_IBD.matrix}
 \title{Calculation of IBD}
 \usage{
-calc_IBD(dos, p1hom, p2hom, ploidy = 2)
+calc_IBD(geno, p1hom, p2hom, ploidy = 2)
 
-\method{calc_IBD}{numeric}(dos, p1hom, p2hom, ploidy = 2)
+\method{calc_IBD}{numeric}(geno, p1hom, p2hom, ploidy = 2)
 
-\method{calc_IBD}{matrix}(dos, p1hom, p2hom, ploidy = 2)
+\method{calc_IBD}{matrix}(geno, p1hom, p2hom, ploidy = 2)
 }
 \arguments{
-\item{dos}{integer or matrix containing genotypes (dosages of allele A, from 0 to ploidy).
-If `dos` is a matrix, each row must be labelled with a marker name, and each column is
-interpreted as an individual.}
+\item{geno}{integer or matrix containing genotypes (genoages of allele A, from 0 to ploidy).
+If `geno` is a matrix, each row must be labelled with a marker name, and each column is
+interpreted as an individual. Note that for many markers of one single individual, a
+1 column matrix must be provided.}
 
 \item{p1hom}{numeric vector or matrix indicating which parental homologue, from parent 1, contains allele A.
-If `dos` is an integer, `p1hom` must be a vector of length ploidy. If `dos` is a matrix,
-`p1hom` must be a matrix of ncol = ploidy and nrow = nrow(dos) and the same rownames
-as `dos`.}
+If `geno` is an integer, `p1hom` must be a vector of length ploidy. If `geno` is a matrix, `p1hom` must be a matrix of ncol = ploidy and nrow = nrow(geno) and the same rownames
+as `geno`.}
 
 \item{p2hom}{numeric vector or matrix indicating which parental homologue, from parent 2, contains allele A.
-If `dos` is an integer, `p2hom` must be a vector of length ploidy. If `dos` is a matrix,
-`p2hom` must be a matrix of ncol = ploidy and nrow = nrow(dos) and the same rownames
-as `dos`.}
+If `geno` is an integer, `p2hom` must be a vector of length ploidy. If `geno` is a matrix,`p2hom` must be a matrix of ncol = ploidy and nrow = nrow(geno) and the same rownames
+as `geno`.}
 
 \item{ploidy}{numeric, indicating the ploidy of an organism. Only even ploidies allowed and
 all individuals are expected to have the same ploidy.}
 }
 \value{
-The na攼㹦ve probability of having inherited each parental homologue. If the
-offspring dosage is impossible given the parental homologues, NA is returned.\n
-If `dos`is a vector, returns a one-row matrix, each column containing the
+The naive probability of having inherited each parental homologue. If the
+offspring genoage is impossible given the parental homologues, NA is returned.
+If `geno`is a vector, returns a one-row matrix, each column containing the
 probability of having inherited that parental homologue (the first columns corresponding
-to parent 1, and the rest to parent 2). \n If `dos` is a matrix, a list of matrices is returned.
+to parent 1, and the rest to parent 2). If `geno` is a matrix, a list of matrices is returned.
 Each element is the probabilities for all individuals of having inherited one parental
 homologue. There should be ploidy*2 elements in the list.
 }
 \description{
-Calculation of IBD
-
-Calculation of IBD for a single data point
-
-Calculation of IBD for multiple markers and/or individuals
+This function computes Identity-by-descent probabilities according to a naive model
+based on random assortment of markers. It requires homologue matrices (`p1hom` and `p2hom`)
+indicating which homologues of each parent carry a genoage of 1 or 0 for the tracked allele.
+Based on this, a probability matrix is returned: for each individual how likely it is,
+at each marker, that it has inherited each of the homologues.
+As a generic method, it can use a single genoage of one marker (and two vectors
+of homologue assignment); a vector of markers (and two homologue matrices) or a matrix of markers
+(and two homologue matrices).
 }
 \section{Methods (by class)}{
 \itemize{
@@ -53,3 +55,16 @@ Calculation of IBD for multiple markers and/or individuals
 \item \code{matrix}: Function for handling matrix input to calc_IBD
 }}
 
+\examples{
+data("genotype")
+geno <- geno[,-1:-2] #we take out parental genotypes
+data("homologue")
+
+#For a single genotype
+IBD <- calc_IBD(geno[1,1],hom[1,1:2],hom[1,3:4], ploidy = 2)
+#For a single individual
+#The genotype must be a matrix of one column!
+IBD <- calc_IBD(geno[,1,drop = FALSE],hom[,1:2],hom[,3:4], ploidy = 2)
+#For all individuals
+IBD <- calc_IBD(geno,hom[,1:2],hom[,3:4], ploidy = 2)
+}

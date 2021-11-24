@@ -4,9 +4,20 @@ Title: Application of map-based genotype correction algorithm Smooth Descent
 Version: 0.1.0
 License: GPL-2
 Encoding: UTF-8
-LazyData: true
+LazyData: True
+Depends: R (>= 3.5.0)
 Imports: 
   MDSMap,
   polymapR,
-  assertthat
-RoxygenNote: 7.1.1
+  assertthat,
+  combinat,
+  scales,
+  smacof
+RoxygenNote: 7.1.2
+Authors@R: c(person("Alejandro", "Therese Navarro", email = "alejandro.theresenavarro@wur.nl", role = c("aut","cre")),
+             person("Peter", "Boruke", role = c("ctb","rev","ths")),
+             person("Eric", "van de Weg", role = c("rev","ths")),
+             person("Chris","Maliepaard",role = c("rev","ths")))
+Description: Map-based genotype correction algorithm that calculates Identity-by-descent probabilities based
+  on 1) homologue assignment matrix and 2) preliminary genetic map. Mapping is also implemented
+  using MDSmap and PolymapR, creating a map-building pipeline that can handle genotyping errors at any ploidy level.

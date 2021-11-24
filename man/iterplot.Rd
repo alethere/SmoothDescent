@@ -24,12 +24,8 @@ maps. Additionally, the reorder parameter tau (see `reorder_tau`) is also
 printed between map comparisons.
 }
 \examples{
-maplist <- list(pre = read.table("test/test_map.txt"),
-flat = readRDS("test/test_flat_map.RDS")$locimap,
-sphere = readRDS("test/test_sphere_map.RDS")$locimap)
-maplist$flat$marker <- maplist$flat$locus
-maplist$sphere$marker <- maplist$sphere$locus
+data("iter_smooth_descent")
 
-iterplot(maplist,main = "Example")
-
+maplist <- extract(sd_iter,"newmap", simplify = FALSE)
+iterplot(maplist, main = "Example iteration plot")
 }

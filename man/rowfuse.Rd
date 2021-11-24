@@ -15,7 +15,7 @@ rowfuse(mat1, mat2, fill = NA)
 that were present in only one of the two matrices.}
 }
 \value{
-
+fused matrix
 }
 \description{
 Similar to merge, given two matrices, row names are matched

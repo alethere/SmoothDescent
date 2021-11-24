@@ -8,9 +8,9 @@
 \usage{
 genotype(IBD, homologue, threshold = 0.8, ploidy = 2)
 
-\method{genotype}{matrix}(ibd, homologue, threshold = 0.8, ploidy = 2)
+\method{genotype}{matrix}(IBD, homologue, threshold = 0.8, ploidy = 2)
 
-\method{genotype}{list}(ibdlist, homologue, threshold = 0.8, ploidy = 2)
+\method{genotype}{list}(IBD, homologue, threshold = 0.8, ploidy = 2)
 }
 \arguments{
 \item{IBD}{numeric matrix or list of matrices.}
@@ -38,7 +38,7 @@ matrices, where each element contains the probabilities of all individuals for o
 Genotypes can be though of as a multiplication between a set of homologue probabilites
 and homologue genotypes. For example, in a diploid we have the following IBD probabilities:
 p(h1) = 0.9, p(h2) = 0.1, p(h3) = 1, p(h4) = 0; and genotypes g(h1) = 1, g(h2) = 0, g(h3) = 0, g(h4) = 1.
-The resulting genotype using a simple multiplication would be \sum{p(hi)*g(hi)}, 0.9 in this case.\break
+The resulting genotype using a simple multiplication would be \eqn{\sum{p(hi)*g(hi)}}, 0.9 in this case.\cr
 We are more interested in imputing integer genotypes, so probabilities must be turned into
 integers. For that reason we use a threshold, default 0.8. All probabilities above 0.8 are turned to 1,
 and all probabilities below 0.8 are turned to 0. If not enough homologues are assigned this way,
@@ -52,3 +52,15 @@ calculated and NA is returned.
 \item \code{list}: Method for a list of IBD matrices
 }}
 
+\examples{
+data("smooth_descent")
+data("homologue")
+IBD <- sdescent$predIBD
+
+#For all individuals at once
+gen <- genotype(IBD, hom)
+#Or one single individual
+#Note this is a matrix where each column is one homologue
+ind <- sapply(IBD,'[',,1)
+gen <- genotype(ind, hom)
+}

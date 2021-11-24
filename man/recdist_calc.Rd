@@ -2,9 +2,12 @@
 % Please edit documentation in R/diagnostics.R
 \name{recdist_calc}
 \alias{recdist_calc}
+\alias{recdist_plot}
 \title{Recombination-distance plot calculator}
 \usage{
 recdist_calc(map, linkdf)
+
+recdist_plot(recdist, main = NULL, ...)
 }
 \arguments{
 \item{map}{a data.frame containing at least "marker" and "position" columns.}
@@ -12,6 +15,13 @@ recdist_calc(map, linkdf)
 \item{linkdf}{a data.frame with columns "marker_a", "marker_b", "r" for
 recombination and "LOD_independence" for the LOD score. Can be obtained
 using the `linkage_shortcut` function and `polymapR::linkage` function.}
+
+\item{recdist}{data.frame containing at least columns "recombination" and "distance".
+Can be obtained from `recdist_calc`.}
+
+\item{main}{title of the plot.}
+
+\item{...}{additional parameters passed onto `plot`}
 }
 \value{
 A data.frame with columns "recombination", for the recombination
@@ -26,4 +36,30 @@ to produce a recombination-distance plot. These plots are useful to
 assess whether a given map order matches well with recombination estimates,
 since larger recombination estimates should be equivalent to
 larger map distances.
+
+Plots a recombination-distance plot that allows to assess whether a given map order
+matches well with recombination estimates,
+since larger recombination estimates should be equivalent to
+larger map distances. It is useful to colour the dots with
+the LOD score.
+}
+\section{Functions}{
+\itemize{
+\item \code{recdist_plot}: plotting function for the output of `recdist_calc`
+}}
+
+\examples{
+data("linkage")
+data("map")
+recdist <- recdist_calc(map,linkdf)
+
+#One can calculate it
+data("linkage")
+data("map")
+recdist <- recdist_calc(map,linkdf)
+recdist_plot(recdist, main = "Example 1")
+
+#But it is also provided as wrapper output
+data("iter_smooth_descent")
+recdist_plot(sd_iter$iter1$recdist)
 }
