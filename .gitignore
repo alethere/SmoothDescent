@@ -1,8 +1,9 @@
 R/make_dataset.R
 SmoothDescent.Rproj
 research/*
+test/*
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
-test/*
+
