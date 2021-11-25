@@ -4,7 +4,6 @@
 for(file in list.files("R/",full.names = T)){ source(file)}
 
 #Calc IBD tests -------
-source("R/Utils.R")
 dos <- as.matrix(read.table("test/test_geno.txt",header = T))
 dos <- dos[,-1:-2] #we take out parental genotypes
 hom <- as.matrix(read.table("test/test_hom.txt",header = T))
@@ -43,7 +42,6 @@ if(!identical(matrix_test,saved_mtest)){
 
 
 #Diagnostics ----------
-source("R/Utils.R")
 maplist <- list(pre = read.table("test/test_map.txt"),
                 flat = readRDS("test/test_flat_map.RDS")$locimap,
                 sphere = readRDS("test/test_sphere_map.RDS")$locimap)
@@ -73,7 +71,6 @@ if(!identical(rc_list,rc_test)){
 }
 
 #Genotype prediction -------------
-source("R/Utils.R")
 ibd <- readRDS("test/pred_IBD.list.RDS")
 hom <- read.table("test/test_hom.txt",header = T)
 
@@ -85,7 +82,7 @@ if(!identical(geno,test_geno)) stop("Output from genotype.list does not coincide
 if(!all(ncol(geno) == sapply(ibd,ncol))) stop("Output from genotype.list does not contain as many columns as IBD input")
 
 #Test NA production
-ib <- lapply(ibd,function(i) i > 0.8)
+ib <- lapply(ibd,function(i) i > 0.7)
 na_test <- all(is.na(geno) == (Reduce('+',ib) < 2))
 if(!na_test) stop("Output from genotype.list does not contain NAs in the correct places")
 
@@ -184,8 +181,5 @@ smoothmap_test <- smooth_map(geno,map,homologue = hom,ploidy = 2,
                              p1name = "P1",p2name = "P2",verbose = T,
                              mapping_ndim = 3)
 
-
 iterplot(smoothmap_test[c("oldmap","newmap")])
-
-
 
