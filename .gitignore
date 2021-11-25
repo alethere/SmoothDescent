@@ -1,4 +1,5 @@
 R/make_dataset.R
+SmoothDescent.Rproj
 research/*
 .Rproj.user
 .Rhistory
