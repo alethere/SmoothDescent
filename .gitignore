@@ -6,4 +6,5 @@ test/
 .Rhistory
 .RData
 .Ruserdata
+R/publication_data.R
 
