@@ -17,7 +17,15 @@
 #' data.frame(A = "second dataframe", B = "second argument"))
 #' extract(example,"A")
 extract <- function(l,index = 1,simplify = T){
-  sapply(l,'[[',index,simplify = simplify)
+  sapply(l,function(element){
+    if(is.list(element)){
+      element[[index]]
+    }else if(is.matrix(element)){
+      element[,index]
+    }else if(is.vector(element)){
+      element[index]
+    }
+  },simplify = simplify)
 }
 
 #Function to cbind two matrices based on columnames. Similar to merge.
