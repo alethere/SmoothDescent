@@ -126,6 +126,7 @@ smooth_descent <- function(geno,
   })
   errors <- Reduce('|',errors)
   errors <- lapply(names(obsIBD),function(i) errors)
+  names(errors) <- names(obsIBD)
   tots <- sapply(errors,sum,na.rm = T)
 
   if(sum(tots) == 0){
@@ -303,7 +304,7 @@ smooth_map <- function(geno,
   far_marks <- closeness >= max_distance
   if(any(far_marks)){
     warning(sum(far_marks)," markers were eliminated from the map due to large neighbour distance: ",
-            paste(map$marker[far_marks],collapse = " "))
+            paste(map$marker[far_marks],collapse = " "),"\n")
   }
   map <- map[!far_marks,]
 

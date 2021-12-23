@@ -366,7 +366,7 @@ graphical_genotype.matrix <- function(IBD,only_informative = F,cex.axis = 0.8,ma
     non_inf <- rowSums(non_inf) == ncol(IBD)
     IBD <- IBD[!non_inf,]
   }
-  image(t(IBD),axes = F,...)
+  image(t(IBD),axes = F,main = main,...)
   at <- seq(0,1,length.out = ncol(IBD))
   axis(1,labels = colnames(IBD),las = 2,at = at,cex.axis = cex.axis)
 }
@@ -376,9 +376,12 @@ graphical_genotype.matrix <- function(IBD,only_informative = F,cex.axis = 0.8,ma
 #' @describeIn graphical_genotype function for a list of matrices.
 graphical_genotype.list <- function(IBD,only_informative = F,cex.axis = 0.8,main = NULL,
                                     non_inf = c(0.3,0.7),...){
+  if(is.null(main)){
+    oma <- c(0,0,0,0)
+  }else oma <- c(0,0,3,0)
   par(mfrow = c(1,length(IBD)),
       mar = c(4,1,3,1),
-      oma = c(0,0,3,0))
+      oma = oma)
   for(i in seq_along(IBD)){
     ib <- IBD[[i]]
     graphical_genotype.matrix(ib,cex.axis = cex.axis,main = names(IBD)[i],
