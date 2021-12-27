@@ -3,29 +3,41 @@
 #' Extraction from list
 #'
 #' Given a list of identical objects, extract the same index of each object.
-#' This is a shortcut for `sapply(list,'[[',index)`
+#' This can be used to extract the same column from a list of matrices,
+#' the same index from a list of vectors or the same element from a list of lists.
+#' Multiple indeces can be provided.
 #'
-#' @param l list of elements with identical structure
-#' @param index numeric, character or logical to be applied to each element of list
-#' @param simplify should the output be simplified
+#' @param l list of elements with identical structure.
+#' @param index numeric or character to be applied to each element of list.
+#' Logicals can also be used, but will not work well with lists of lists.
+#' @param simplify should the output be simplified?
 #'
 #' @return list, vector or matrix of extracted objects
 #' @export
 #'
 #' @examples
 #' example <- list(data.frame(A = "first dataframe", B = "second argument"),
-#' data.frame(A = "second dataframe", B = "second argument"))
+#'     data.frame(A = "second dataframe", B = "second argument"))
+#' #From each data.frame extract column A
 #' extract(example,"A")
 extract <- function(l,index = 1,simplify = T){
-  sapply(l,function(element){
-    if(is.list(element)){
-      element[[index]]
-    }else if(is.matrix(element)){
-      element[,index]
-    }else if(is.vector(element)){
-      element[index]
-    }
-  },simplify = simplify)
+  if(length(index) > 1){
+    res <- lapply(index,function(i){
+      extract(l,i,simplify = T)
+    })
+    names(res) <- index
+    return(res)
+  }else{
+    sapply(l,function(element){
+      if(is.list(element)){
+        element[[index]]
+      }else if(is.matrix(element)){
+        element[,index]
+      }else if(is.vector(element)){
+        element[index]
+      }
+    },simplify = simplify)
+  }
 }
 
 #Function to cbind two matrices based on columnames. Similar to merge.
