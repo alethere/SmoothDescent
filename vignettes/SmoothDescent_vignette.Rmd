@@ -1,0 +1,472 @@
+---
+title: "Starting with smooth descent"
+author: "Alejandro Therese Navarro"
+date: "December 2021"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+vignette: >
+  %\VignetteIndexEntry{Starting with smooth descent}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+# knitr::opts_chunk$set(
+#   collapse = TRUE,
+#   comment = "#>"
+# )
+library(SmoothDescent)
+library(knitr)
+```
+
+Smooth Descent is a map-cleaning algorithm that can calculate identity by descent probabilities, predict genotyping errors and impute corrected genotypes. By applying this method, new genetic maps can be estimated to improve genetic map quality in an iterative process, similarly as was done in SMOOTH (van Os et al. 2006)^[Os, Hans & Stam, Piet & Visser, Richard & Eck, Herman. (2006). SMOOTH: A statistical method for successful removal of genotyping errors from high-density genetic linkage data. TAG. Theoretical and applied genetics. Theoretische und angewandte Genetik. DOI: 10.1007/s00122-005-0124-y. https://link.springer.com/article/10.1007/s00122-005-0124-y]
+
+If you want to qucikly use `SmoothDescent` go to the Quick guide section, for the general user, the Introduction and Visualization sections should be enough to use the package. If you want to get into the nitty gritty, check out the Paramters and Basic functions sections.
+
+# Quick guide
+For a full explanation go to the following sections.
+
+## Installation
+To install, you can do it from the github page using `devtools`.
+```{r,eval = F}
+devtools::install_github("https://github.com/Alethere/SmoothDescent")
+```
+
+## One smoothing round
+If you already have a map and just want to obtain IBDs, error probabilities and updated genotypes, use `smooth_descent()`:
+```{r}
+sd1 <- smooth_descent(geno = geno, homologue = hom, map = map,
+                      ploidy = 2, p1name = "P1", p2name = "P2")
+
+#The observed IBD matrix
+graphical_genotype(sd1$obsIBD)
+#The predicted IBD matrix
+graphical_genotype(sd1$predIBD)
+#The error matrix
+graphical_genotype(sd1$error)
+#The new IBD matrix
+graphical_genotype(sd1$newIBD)
+
+knitr::kable(sd1$newgeno[1:10,1:10])
+```
+
+## One smoothing and mapping round
+If you want to use improved genotypes to estimate a new order with a single round of mapping, you can use `smooth_map()`. You can provide a preliminary order or let the program estimate it automatically.
+```{r}
+#There's no preliminary map made in this example, so it's calculated at the beggining
+#mappin_ndim = 2 is less accurate than mapping_ndim = 3 but faster.
+sm1 <- smooth_map(geno = geno, homologue = hom ,
+                  ploidy = 2, p1name = "P1", p2name = "P2",
+                  mapping_ndim = 2)
+
+#Same outputs as before, plus a newmap, recdist and r2 parameters
+graphical_genotype(sm1$predIBD)
+```
+```{r}
+#This indicates the relationship between recombination frequency and distance of the new map
+recdist_plot(sm1$recdist)
+
+#This compares the old and new maps obtained
+#tau indicates order correlation between maps
+iterplot(list(premap = sm1$oldmap,iter1 = sm1$newmap),
+         main = "Two map comparison")
+```
+
+## Iterative smoothing
+If you want to apply smooth descent iteratively and re-compute a linkage map each iteration, you can use `smooth_map_iter()` which does so automatically. To access the output the `extract()` function is quite useful.
+```{r}
+sm5 <- smooth_map_iter(geno = geno, homologue = hom, iters = 5,
+                    ploidy = 2, p1name = "P1", p2name = "P2",
+                    mapping_ndim = 2, verbose = F)
+
+#The results of each iteration are equivalent to the output of smooth_map()
+graphical_genotype(sm5$iter1$predIBD)
+
+#Use extract() to access results from all iterations
+#To access the r2 of each iteration
+r2 <- extract(sm5,"r2")
+r2
+
+#Or the newmaps of each iteration
+newmaps <- extract(sm5,"newmap", simplify = F)
+iterplot(newmaps)
+```
+
+# Introduction
+
+In this vignette we'll introduce the functions within the `SmoothDescent` package. We can divide them in three groups: basic functions, plotting functions and wrapper functions. Basic functions perform all the essential computations, but can be cumbersome to use if you just care about the output. Instead, wrapper functions use these basic functions and automate the analysis process. Plotting functions are diagnostic tools for analysing different types of output.
+
+The R package `SmoothDescent` offers three wrapper functions that perform all computations:
+
+* `smooth_descent()`: performs a signle run of the smooth descent algorithm without linkage mapping, but requires a marker map to be provided.
+* `smooth_map()`: computes a linkage map, applies smooth descent and obtains a "corrected" linkage map. 
+* `smooth_map_iter()`: applies n iterations of the smooth descent algorithm. If n = 1 it is equivalent to `smooth_map()`. 
+
+In this section we'll use the wrapper functions to understand the smooth descent algorithm, its inputs and its outputs.
+
+## Inputs
+In this package there is a central algorithm, smooth descent, which is described in **preprint** and based on SMOOTH by (van Os et al. 2006). In essence, the algorithm uses *phased parental genotypes* and a *marker order* to obtain 1) observed IBDs, 2) predcited IBDs, 3) error estimates and 4) a new set of corrected IBDs and genotypes.
+
+So the inputs required for smooth descent are at least three: a population genotype matrix, a panretal homologue matrix (phased genotypes) and a marker order. There's some example data in the package that we can have a look at:
+```{r}
+#A genotype matrix with column names and row names
+knitr::kable(geno[1:15,1:15])
+
+#A homologue matrix with at least row names
+knitr::kable(hom[1:15,])
+
+#A map data.frame with at least two columns: marker and position
+knitr::kable(map[1:15,])
+```
+
+With this data we can already run the simplest wrapper, that just performs IBD calculation, error prediction and imputation of new IBDs. We also need to specify the `ploidy` (all even ploidies are accepted). The names of the parents (`p1name` and `p2name`) are assumed to be the two first columns in the genotype matrix, but it's better to specify them.
+
+```{r}
+sd1 <- smooth_descent(geno,hom,map, 
+                      ploidy = 2, p1name = "P1", p2name = "P2")
+```
+
+We can also obtain an improved map based on the newly estimated genotypes, and using our preliminary map as a starting order. The mapping is the slowest part of the process.
+```{r}
+sm1 <- smooth_map(geno,hom,map, 
+                  ploidy = 2, p1name = "P1", p2name = "P2")
+```
+
+If we want to run multiple iterations we can use `smooth_map_iter()`
+```{r}
+sm5 <- smooth_map_iter(geno,hom,map, iters = 5,
+                       ploidy = 2, p1name = "P1", p2name = "P2",
+                       verbose = F)
+```
+
+If we're using `smooth_map()` or `smooth_map_iter()` the preliminary map is not necessary, and if not given it will be estimated at the beggining of the process. In both cases, the `mapping_ndim` parameter indicates the dimensions to use in `MDSmap` (2 or 3), 3 is more accurate but also quite slower. The `ncores` parameter can also be indicated, which uses parallelization for linkage estimation and speeds up the process.
+
+## IBD outputs
+
+```{r}
+#Outputs of smooth descent
+names(sd1)
+```
+
+All functions output a list with different items. The `obsIBD`, `predIBD`, `error` and `newIBD` are all lists of matrices, each with information about one homologue for all individuals:
+
+* `obsIBD` contains observed IBD probabilities, based on random assortment of alleles. They are the basis of IBD prediction. NA values in this matrix mean that the observed genotype was impossible given the parental genotypes.
+* `predIBD` contains predicted IBD probabilities, they are usually the most informative to see which parental chromosome has inherited each individual. NA values in this matrices indicate either that there was an impossible genotype in the observed IBDs, or that there was not enough information to predict IBDs (for example when there's only markers from a single parent in a whole region).
+* `error` contains a logical matrix, that indicates whether that marker is (TRUE) or not (FALSE) an error. Importantly, all missing values in the predIBD matrix are interpreted as errors.
+
+```{r}
+sd1$obsIBD[[1]][1:15,1:10]
+sd1$predIBD[[1]][1:15,1:10]
+```
+
+You might want to see the IBDs for a single individual. You can do that with the utility function `extract()`.
+
+```{r, fig.width= 3, fig.height=5}
+predicted06 <- extract(sd1$predIBD,"Ind06")
+predicted06[1:15,]
+#Homologues 2 and 4 have been inherited from parent 1 and 2 respectively.
+```
+
+All the error matrices assign errors to the same positions, but for consistency four matrices are also returned. 
+
+```{r}
+all(sd1$error[[1]] == sd1$error[[2]])
+```
+
+Lastly, the newIBD matrices are used to impute new genotypes. In all cases we will get an `oldgeno` and `newgeno` list elements, which contain the corrected genotypes. We can see how many changes have been made. 
+```{r}
+sum(sd1$oldgeno != sd1$newgeno)
+mean(sd1$oldgeno != sd1$newgeno)
+```
+In some cases, more errors are detected than can be confidently estimated. In the example dataset that is not the case.
+```{r}
+#Predicted errors
+sum(sd1$error[[1]])
+#Corrected errors
+sum(sd1$oldgeno != sd1$newgeno)
+```
+
+These outputs can be found not only from `smooth_descent()`, but also in the results from the mapping wrappers `smooth_map()` and `smooth_map_iter()`.
+
+```{r}
+names(sm1)
+names(sm5$iter1)
+```
+
+## Mapping outputs
+
+The two mapping wrappers provide some additional outputs that are produced during the linkage map calculation:
+
+* `newmap`: the map obtained when using new genotypes.
+* `recdist`: a data.frame containing the recombination estimate between two markers, and the distance between them in the new map. A good map should have more or less a direct relationship between the two.
+* `r2`: the R2 of the relationship between recombination and distance. The higher the value, the better the new map. To find **the best map** look for the iteration with the highest R2.
+* `tau`: the **order correlation** between the old and new maps. If negative, one of the two maps should be reversed.
+* `eliminated`: during the mapping, distances between markers are evaluated to detect isolated markers (with a high distance to all its surrounding markers). Isolated markers are eliminated to prevent mapping artifacts. This is controlled by the `max_distance` parameter. Set it to 100 to prevent this behaviour. 
+
+```{r}
+#Shows difference between the names of the two elements
+setdiff(names(sm1),names(sd1))
+
+knitr::kable(sm1$newmap[1:15,])
+knitr::kable(sm1$recdist[1:15,])
+sm1$r2
+sm1$tau
+sm1$eliminated #In this case no markers have been eliminated
+```
+
+If we want to find the best iteration we can do so by inspecting all the `r2` elements using `extract()`
+```{r}
+r2 <- extract(sm5,"r2")
+
+#I usually round the r2, since many iterations might have very similar r2. 
+#We normally want a relatively high r2 but a low iteration number.
+which.max(round(r2,2))
+```
+
+## Recombination outputs
+Besides mapping and IBD outputs, recombinations are also estimated based on the IBD matrices. For example, if one marker indicates H1 with highest probability and the next indicates H2, we count this switch as a recombination. 
+
+Any of the IBD outputs (observed IBD, predicted IBD or new IBD) can be used to predict recombinations. As a rule, predicted IBD (`predIBD`) gives the best outcome for recombination counting, since it is less affected by genotyping errors than observed or new IBD. Inspecting the number of predicted recombinations in observed IBD (`obsIBD`) or new IBD (`newIBD`) can give us a sense of the number of genotyping errors in the old or new genotypes respectively. 
+
+Recombination counts can be found in the `rec` element and are generated automatically with any wrapper. They are calculated independtly for each parent, and two measures are returned:
+
+* `individual`: a count of recombinations per individual.
+* `on_map`: a count of recombinations, across all individuals, in windows along the obtained map. Can be useful to detect regions where most of the recombinations are located.
+```{r}
+#results from  smooth_map()
+names(sm1$rec) #One element per type of IBD matrix
+names(sm1$rec$pred) #One element for each parent
+names(sm1$rec$pred$p1) #Two outputs
+
+#Let's look at the predicted recombinations
+p1rec <- sm1$rec$pred$p1
+p1rec$individual
+p1rec$on_map
+
+#Let's compare with observed recombinations
+p1rec_obs <- sm1$rec$obs$p1
+#Clearly, some individuals have a high number of genotyping errors
+#look at Ind19 for example. 
+data.frame(predicted = p1rec$individual[1:20],
+          observed = p1rec_obs$individual[1:20])
+
+```
+
+# Visualization
+Looking at plain numbers can sometimes be overwhelming. We've included some visualization tools to help assessing the output of this package. There are three main functions: `graphical_genotype()`, `iterplot()` and `recdist_plot()`. 
+
+## IBD visualization
+The `graphical_genotype()` function is useful to visualize probability matrices, such as the IBD matrices or the error matrices. It can plot either a single matrix or a list of matrices, providing very similar outputs.
+```{r}
+#Here we see the IBD matrices for all homologues and all individuals
+graphical_genotype(sd1$predIBD)
+#Or for all individuals but a single homologue
+graphical_genotype(sd1$predIBD$H1_P1, main = "Only for homologue 1")
+```
+
+It is also useful to visualize single individuals if combined with the `extract()` utility function.
+```{r, fig.width= 3}
+ibd <- extract(sd1$pred,c("Ind02"))
+#Title and colours can also be easily changed.
+graphical_genotype(ibd, main = "Individual 02", 
+                   col = hcl.colors(300,"Dark Mint"))
+```
+
+If we want to extract IBDs from multiple individuals we can also use `extract()` 
+```{r}
+ibd <- extract(sd1$pred,c("Ind02","Ind14","Ind07"))
+graphical_genotype(ibd, col = hcl.colors(300,"Sunset"))
+```
+
+## Map iteration visualization
+One of the features of `SmoothDescent` is to iteratively improve genetic maps. It is often useful to compare the maps from all iterations to see which changes have been made as the algorithm progressed. We can use `iterplot()` for that. This function expects a list of maps.
+```{r}
+#We can create a list of maps from the output of smooth_map_iter()
+maplist <- extract(sm5,"newmap",simplify = F)
+#With this we don't see the first map (iteration 0)
+iterplot(maplist)
+
+maplist <- c(sm5$iter1["oldmap"],maplist)
+iterplot(maplist,main = "Comparison of all maps")
+```
+
+The tau indicates the order correlation between adjacent maps.
+
+## Recdist visualization
+The `recdist_plot()` function helps us visualize the recombination-distance relationship of each new map calculated. This can be useful to manually inspect which iteration has produced the best output. This function only accepts a single recdist matrix at a time. 
+```{r}
+par(mfrow = c(1,2))
+recdist_plot(sm5$iter1$recdist)
+recdist_plot(sm5$iter5$recdist)
+```
+
+In these examples the recombination-distance relationship is very good. However, sometimes we can find very funky relationships that indicate something is wrong in the mapping.
+
+# Parameters
+This section will help you understand the different parameters that influence the behaviour of smooth descent. The default parameters should work well in most cases, but if you want to tweak things or experiment with the algorithm, this section will help you better understand the impact of each parameter.
+
+### Prediction interval
+IBD prediction is performed as a moving average within a window around each marker. By default 10cM are used around each marker. You might want to increase this if your data is very sparse. If you use a physical map instead, expressed in bp, you should definitely increase this value for example to 10000bp. 
+
+Let's look at an example where we compare a predicted interval of 10 cM (default), 30 cM (large) or 2 cM (small)
+```{r}
+#Here we will test the effect of a different prediction intervals
+sd_default <- smooth_descent(geno = geno, homologue = hom, map = map,
+                             ploidy = 2, p1name = "P1", p2name = "P2",
+                             verbose = F)
+sd_int_large <- smooth_descent(geno = geno, homologue = hom, map = map,
+                             ploidy = 2, p1name = "P1", p2name = "P2",
+                             prediction_interval = 30,verbose = F)
+sd_int_small <- smooth_descent(geno = geno, homologue = hom, map = map,
+                             ploidy = 2, p1name = "P1", p2name = "P2",
+                             prediction_interval = 2,verbose = F)
+H1 <- list(default = sd_default$predIBD$H1_P1[,1:5],
+           larger_interval = sd_int_large$predIBD$H1_P1[,1:5],
+           smaller_interval = sd_int_small$predIBD$H1_P1[,1:5])
+
+graphical_genotype(H1, main = "IBD of homologue 1 for 5 individuals")
+```
+
+We can see how larger intervals produce longer regions of uncertain IBD probabilities for the different individuals. On the other hand, smaller intervals have the problem that in some cases very few markers provide information for the prediction, and consequently there are missing values and IBD inaccuracies. 
+
+### Prediction threshold
+This parameter is used in the IBD imputation step. If the predicted IBDs are below this threshold (0.8 by default) they will not be used to impute new genotypes. In practice, lowering this threshold results in wrong imputations. Increasing it can be useful if you want to be very stringent.
+
+Let's compare results using the default threshold, a stringent threshold (1) or a lax threshold (0)
+```{r}
+#Here we will test the effect of different prediction thresholds.
+sd_default <- smooth_descent(geno = geno, homologue = hom, map = map,
+                             ploidy = 2, p1name = "P1", p2name = "P2",
+                             verbose = F)
+#We will only accept imputations if IBD probabilities are 1
+sd_th_large <- smooth_descent(geno = geno, homologue = hom, map = map,
+                             ploidy = 2, p1name = "P1", p2name = "P2",
+                             prediction_threshold = 1,verbose = F)
+#We accept any imputation
+sd_th_small<- smooth_descent(geno = geno, homologue = hom, map = map,
+                             ploidy = 2, p1name = "P1", p2name = "P2",
+                             prediction_threshold = 0,verbose = F)
+
+#The proportion of changes
+def_change <- mean(sd_default$newgeno != sd_default$oldgeno)
+large_change <- mean(sd_th_large$newgeno != sd_default$oldgeno)
+small_change <- mean(sd_th_small$newgeno != sd_default$oldgeno)
+
+print(paste0("By default we impute ",round(def_change*100,2),"% of genotypes"))
+print(paste0("With increased stringency we impute ",
+             round(large_change*100,2),"% of genotypes"))
+print(paste0("With decreased stringency we impute ",
+             round(small_change*100,2),"% of genotypes"))
+```
+In this example there are no erroneous markers with low IBD probabilities, so decreasing the prediction threshold has no effect. 
+
+### Error threshold
+During the error assignment step, all markers that have an error probability above this threshold will be considered errors. The default of 0.8 works quite well, but if you want to be very stringent you could lower it. Values below 0.5 might yield strange output, since markers with larger probability of not being an error would be assigned to the error category too. 
+
+```{r}
+#Here we will test the effect of error thresholds
+sd_default <- smooth_descent(geno = geno, homologue = hom, map = map,
+                             ploidy = 2, p1name = "P1", p2name = "P2",
+                             verbose = F)
+#Only if the error probability is above 0.95 we consider it an error (very lax)
+sd_th_large <- smooth_descent(geno = geno, homologue = hom, map = map,
+                             ploidy = 2, p1name = "P1", p2name = "P2",
+                             error_threshold = 0.95,verbose = F)
+#Any marker with an error probability above 0.5 is considered an error (very stringent)
+sd_th_small<- smooth_descent(geno = geno, homologue = hom, map = map,
+                             ploidy = 2, p1name = "P1", p2name = "P2",
+                             error_threshold = 0.5,verbose = F)
+
+#The proportion of errors
+#All error matrices have the same markers identified as errors
+def_change <- mean(sd_default$error$H1_P1)
+large_change <- mean(sd_th_large$error$H1_P1)
+small_change <- mean(sd_th_small$error$H1_P1)
+
+print(paste0("By default we consider ",round(def_change*100,2),"% of genotypes as errors"))
+print(paste0("With decreased stringency we cosider ",
+             round(large_change*100,2),"% of genotypes as errors"))
+print(paste0("With increased stringency we consider ",
+             round(small_change*100,2),"% of genotypes as errors"))
+```
+
+### Non-informative markers
+This parameter (`non_inf`) defines the interval of IBD probabilities that are ignored during the IBD prediction step. In diploids this has no effect, since probabilities can only be 0, 1 or 0.5. Thus, any interval containing 0.5 will work equally well. In polyploids, different intervals will produce different predictions. The default of 0.3 to 0.7 works pretty well in tetraploids. Reducing the interval (to 0.4 to 0.6 for instance) gives less certain IBD predictions. Non-symmetric intervals can be used too... if you think that's sensible.
+
+### Max distance
+This parameter determines the maximum distance at which any marker is allowed to be from other markers. For example, if `max_distance` is 3, any marker whose closest marker is at a distance larger than 3 is eliminated. In practice, a `max_distance` of 5 works well in relatively dense maps. Larger values might be needed for sparser maps. Use a very large value to prevent this behaviour.
+
+### Interactions
+All parameters that affect the prediction process (`prediction_interval`, `prediction_threshold`,  `error_threshold` and `non_inf`) will impact each other and the final outcome. More uncertain IBD probabilities (larger `prediction_interval`) will lead to less confident genotype imputations. A lower `error_threshold` will detect more markers as errors, which will try to be imputed, but will likely have less certain IBDs and require a lower `prediction_threshold` to affect the estimated genotypes. Consider parameter interactions carefully when fine-tuning them. 
+
+# Basic functions
+You may be interested in the more basic functions if you're looking to experiment with the algorithm yourself:
+
+* `calc_IBD()`: to calculate observed IBDs based on simple assortment of alleles.
+* `predict_IBD()`: to predict expected IBDs based on observed IBDs.
+* `genotype()`: to obtain new genotypes based on an IBD matrix.
+
+### Calculate IBD
+To calculate IBD we use genotype and parental homologue information. The `calc_IBD()` function can take a single marker or a matrix of markers (not a vector). The output will depend on the input. This function obtains probabilities based on a random allele assortment assumption. 
+```{r}
+#For a single marker
+calc_IBD(geno = 1,p1hom = c(h1 = 0, h2 = 1), p2hom = c(h3 = 0,h4 = 0), ploidy = 2)
+#Tetraploid probabilities
+calc_IBD(geno =2,p1hom = c(0,0,1,0),p2hom = c(0,1,0,1), ploidy = 4)
+#Impossible genotype
+calc_IBD(geno = 2,p1hom = c(0,1),p2hom = c(0,0), ploidy = 2)
+
+#For a single individual the genotype input must be a one column matrix
+calc_IBD(geno[1:10,3,drop = F],
+         p1hom = hom[1:10,1:2],
+         p2hom = hom[1:10,3:4],ploidy = 2)
+```
+### Predict IBD
+This function uses an observed IBD matrix and a map to compute predicted IBDs using a windowed average method. The prediction also ignores "non-informative" markers, markers which have an uncertain probability (rather than low or high probability for a given homologue).
+The `predict_IBD()` function takes as input vectors, lists or matrices.
+
+```{r}
+#We calculate IBDs removing the genotypes of the parents
+IBD <- calc_IBD(geno[,-1:-2],p1hom = hom[,1:2],p2hom = hom[,3:4])
+
+#One parental homologue for one individual: a named vector
+ibd <- predict_IBD(IBD$H1_P1[,3],map = map)
+graphical_genotype(matrix(ibd,ncol = 1))
+
+#Many individuals, a single homologue: a matrix
+ibd <- predict_IBD(IBD$H1_P1,map = map)
+graphical_genotype(ibd, main = "A single homologue")
+
+#All homologues of one individual
+ibd <- predict_IBD(extract(IBD,"Ind02"),map = map)
+graphical_genotype(ibd, main = "A single individual")
+
+#All homologues of all individuals: a list of IBD matrices
+ibd <- predict_IBD(IBD,map = map)
+graphical_genotype(ibd)
+
+#Multiple individuals
+ibd <- predict_IBD(extract(IBD,c("Ind02","Ind14","Ind07")),map = map)
+graphical_genotype(ibd)
+```
+
+###Genotype
+The `genotype()` function takes in an IBD matrix (usually newIBD) and computes the set of genotypes corresponding to those IBDs. You can add a threshold, all predictions with a probability below the threshold will be given an NA as a result. 
+If a matrix is given, it is assumed that it contains all homologue probabilities for a single individual! 
+```{r}
+#We calculate IBDs removing the genotypes of the parents
+IBD <- calc_IBD(geno[,-1:-2],p1hom = hom[,1:2],p2hom = hom[,3:4])
+#In this case there's no change to the IBD matrix so there's no change in genotypes
+newgeno <- genotype(IBD,homologue = hom)
+all(newgeno == geno[,-1:-2])
+
+#For one individual
+ibd <- extract(IBD,"Ind02")
+gen <- genotype(ibd,hom)
+#Again all genotypes are the same as the originals
+all(gen == geno[,"Ind02"])
+```
+

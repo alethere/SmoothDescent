@@ -13,6 +13,8 @@ Imports:
   combinat,
   scales,
   smacof
+VignetteBuilder: knitr
+Suggests: knitr
 RoxygenNote: 7.1.2
 Authors@R: c(person("Alejandro", "Therese Navarro", email = "alejandro.theresenavarro@wur.nl", role = c("aut","cre")),
              person("Peter", "Boruke", role = c("ctb","rev","ths")),
