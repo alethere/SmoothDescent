@@ -21,5 +21,7 @@ Authors@R: c(person("Alejandro", "Therese Navarro", email = "alejandro.theresena
              person("Eric", "van de Weg", role = c("rev","ths")),
              person("Chris","Maliepaard",role = c("rev","ths")))
 Description: Map-based genotype correction algorithm that calculates Identity-by-descent probabilities based
-  on 1) homologue assignment matrix and 2) preliminary genetic map. Mapping is also implemented
-  using MDSmap and PolymapR, creating a map-building pipeline that can handle genotyping errors at any ploidy level.
+  on 1) homologue assignment matrix (phased genotypes) and 2) a preliminary genetic map. Mapping is also implemented
+  using R packages MDSmap and PolymapR, creating a map-building pipeline that can handle genotyping errors at 
+  any ploidy level. The smooth descent algorithm is based on SMOOTH (van Os et al. 2006) <doi:10.1007/s00122-005-0124-y>.
+  A developer version of this package can be found on Github <https://github.com/Alethere/SmoothDescent>
