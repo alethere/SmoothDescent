@@ -10,7 +10,8 @@ devtools::install_github("https://github.com/Alethere/SmoothDescent")
 ```
 
 # Vignette
-You can preview the [vignette here](https://htmlpreview.github.io/?https://github.com/Alethere/SmoothDescent/blob/master/vignettes/SmoothDescent_vignette.html), although some of the formatting does not work through github. You can also install the vignette by using the code below (will take a couple minutes).
+You can preview the [vignette here](https://htmlpreview.github.io/?https://github.com/Alethere/SmoothDescent/blob/master/doc/SmoothDescent_vignette.html), although some of the formatting does not work through github. You can also install the vignette and view it locally by using the code below (will take a couple minutes).
 ```
 devtools::install_github("https://github.com/Alethere/SmoothDescent", build_vignette = T)
+browseVignettes("SmoothDescent")
 ```
