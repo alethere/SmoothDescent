@@ -12,3 +12,6 @@ Download the package [binary file](https://github.com/Alethere/SmoothDescent/raw
 ```
 install.packages("file/location/SmoothDescent_0.1.0.tar.gz", repos = NULL)
 ```
+
+# Vignette
+You can find the [vignette here](https://github.com/Alethere/SmoothDescent/blob/master/vignettes/SmoothDescent_vignette.html)
