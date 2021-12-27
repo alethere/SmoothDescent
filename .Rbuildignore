@@ -3,3 +3,6 @@
 research/*
 test/*
 temp
+^doc$
+^Meta$
+vignettes/*html
