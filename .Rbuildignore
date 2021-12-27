@@ -3,5 +3,5 @@
 research/*
 test/*
 temp
-R/publication_data.R
-
+^doc$
+^Meta$
