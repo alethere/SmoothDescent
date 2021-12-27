@@ -33,6 +33,8 @@ For a full explanation go to the following sections.
 To install, you can do it from the github page using `devtools`.
 ```{r,eval = F}
 devtools::install_github("https://github.com/Alethere/SmoothDescent")
+#to install the vignette as well use (takes some time)
+devtools::install_github("https://github.com/Alethere/SmoothDescent", build_vignettes = T)
 ```
 
 ## One smoothing round
@@ -158,16 +160,16 @@ All functions output a list with different items. The `obsIBD`, `predIBD`, `erro
 * `error` contains a logical matrix, that indicates whether that marker is (TRUE) or not (FALSE) an error. Importantly, all missing values in the predIBD matrix are interpreted as errors.
 
 ```{r}
-sd1$obsIBD[[1]][1:15,1:10]
-sd1$predIBD[[1]][1:15,1:10]
+kable(sd1$obsIBD[[1]][1:15,1:10])
+kable(sd1$predIBD[[1]][1:15,1:10],digits = 3)
 ```
 
 You might want to see the IBDs for a single individual. You can do that with the utility function `extract()`.
 
 ```{r, fig.width= 3, fig.height=5}
 predicted06 <- extract(sd1$predIBD,"Ind06")
-predicted06[1:15,]
-#Homologues 2 and 4 have been inherited from parent 1 and 2 respectively.
+kable(predicted06[1:15,])
+#This individual inherited homologues 2 and 4
 ```
 
 All the error matrices assign errors to the same positions, but for consistency four matrices are also returned. 
@@ -244,22 +246,22 @@ names(sm1$rec$pred$p1) #Two outputs
 #Let's look at the predicted recombinations
 p1rec <- sm1$rec$pred$p1
 p1rec$individual
-p1rec$on_map
+kable(p1rec$on_map)
 
 #Let's compare with observed recombinations
 p1rec_obs <- sm1$rec$obs$p1
 #Clearly, some individuals have a high number of genotyping errors
 #look at Ind19 for example. 
-data.frame(predicted = p1rec$individual[1:20],
-          observed = p1rec_obs$individual[1:20])
+kable(data.frame(predicted = p1rec$individual[1:20],
+          observed = p1rec_obs$individual[1:20]))
 
 ```
 
 # Visualization
-Looking at plain numbers can sometimes be overwhelming. We've included some visualization tools to help assessing the output of this package. There are three main functions: `graphical_genotype()`, `iterplot()` and `recdist_plot()`. 
+Looking at plain numbers can sometimes be overwhelming. We've included some visualization tools to help understand the output of this package. There are three main functions: `graphical_genotype()`, `iterplot()` and `recdist_plot()`. 
 
 ## IBD visualization
-The `graphical_genotype()` function is useful to visualize probability matrices, such as the IBD matrices or the error matrices. It can plot either a single matrix or a list of matrices, providing very similar outputs.
+The `graphical_genotype()` function is useful to visualize probability matrices, such as the IBD matrices or the error matrices. It can plot either a single matrix or a list of matrices, providing very similar outputs. By default, low values will be given a yellow colour, while high values will be given a red colour. We can identify which homologue has been inherited by each individual by looking at stretches of red.
 ```{r}
 #Here we see the IBD matrices for all homologues and all individuals
 graphical_genotype(sd1$predIBD)
@@ -453,7 +455,7 @@ ibd <- predict_IBD(extract(IBD,c("Ind02","Ind14","Ind07")),map = map)
 graphical_genotype(ibd)
 ```
 
-###Genotype
+### Genotype
 The `genotype()` function takes in an IBD matrix (usually newIBD) and computes the set of genotypes corresponding to those IBDs. You can add a threshold, all predictions with a probability below the threshold will be given an NA as a result. 
 If a matrix is given, it is assumed that it contains all homologue probabilities for a single individual! 
 ```{r}

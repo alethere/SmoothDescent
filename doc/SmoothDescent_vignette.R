@@ -8,6 +8,8 @@ library(knitr)
 
 ## ----eval = F-----------------------------------------------------------------
 #  devtools::install_github("https://github.com/Alethere/SmoothDescent")
+#  #to install the vignette as well use (takes some time)
+#  devtools::install_github("https://github.com/Alethere/SmoothDescent", build_vignettes = T)
 
 ## -----------------------------------------------------------------------------
 sd1 <- smooth_descent(geno = geno, homologue = hom, map = map,
@@ -88,13 +90,13 @@ sm5 <- smooth_map_iter(geno,hom,map, iters = 5,
 names(sd1)
 
 ## -----------------------------------------------------------------------------
-sd1$obsIBD[[1]][1:15,1:10]
-sd1$predIBD[[1]][1:15,1:10]
+kable(sd1$obsIBD[[1]][1:15,1:10])
+kable(sd1$predIBD[[1]][1:15,1:10],digits = 3)
 
 ## ---- fig.width= 3, fig.height=5----------------------------------------------
 predicted06 <- extract(sd1$predIBD,"Ind06")
-predicted06[1:15,]
-#Homologues 2 and 4 have been inherited from parent 1 and 2 respectively.
+kable(predicted06[1:15,])
+#This individual inherited homologues 2 and 4
 
 ## -----------------------------------------------------------------------------
 all(sd1$error[[1]] == sd1$error[[2]])
@@ -139,14 +141,14 @@ names(sm1$rec$pred$p1) #Two outputs
 #Let's look at the predicted recombinations
 p1rec <- sm1$rec$pred$p1
 p1rec$individual
-p1rec$on_map
+kable(p1rec$on_map)
 
 #Let's compare with observed recombinations
 p1rec_obs <- sm1$rec$obs$p1
 #Clearly, some individuals have a high number of genotyping errors
 #look at Ind19 for example. 
-data.frame(predicted = p1rec$individual[1:20],
-          observed = p1rec_obs$individual[1:20])
+kable(data.frame(predicted = p1rec$individual[1:20],
+          observed = p1rec_obs$individual[1:20]))
 
 
 ## -----------------------------------------------------------------------------
