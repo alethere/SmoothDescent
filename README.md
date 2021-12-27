@@ -14,4 +14,4 @@ install.packages("file/location/SmoothDescent_0.1.0.tar.gz", repos = NULL)
 ```
 
 # Vignette
-You can find the [vignette here](https://github.com/Alethere/SmoothDescent/blob/master/vignettes/SmoothDescent_vignette.html)
+You can find the [vignette here](https://htmlpreview.github.io/?https://github.com/Alethere/SmoothDescent/blob/master/vignettes/SmoothDescent_vignette.html)
