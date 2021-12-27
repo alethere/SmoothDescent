@@ -234,7 +234,6 @@ recdist_plot <- function(recdist,main =NULL,...){
        ylab = "distance",main = main,...)
 
   points(new_x,pred, type = "l",col = "red3",lwd =  3)
-  return(r2*100)
 }
 
 #Iteration maps ---------
@@ -366,7 +365,7 @@ graphical_genotype.matrix <- function(IBD,only_informative = F,cex.axis = 0.8,ma
     non_inf <- rowSums(non_inf) == ncol(IBD)
     IBD <- IBD[!non_inf,]
   }
-  image(t(IBD),axes = F,main = main,...)
+  image(t(IBD),axes = F,main = main,ylim = c(1,0),...)
   at <- seq(0,1,length.out = ncol(IBD))
   axis(1,labels = colnames(IBD),las = 2,at = at,cex.axis = cex.axis)
 }
@@ -376,6 +375,7 @@ graphical_genotype.matrix <- function(IBD,only_informative = F,cex.axis = 0.8,ma
 #' @describeIn graphical_genotype function for a list of matrices.
 graphical_genotype.list <- function(IBD,only_informative = F,cex.axis = 0.8,main = NULL,
                                     non_inf = c(0.3,0.7),...){
+  opar <- par(no.readonly = T)
   if(is.null(main)){
     oma <- c(0,0,0,0)
   }else oma <- c(0,0,3,0)
@@ -388,4 +388,5 @@ graphical_genotype.list <- function(IBD,only_informative = F,cex.axis = 0.8,main
                               only_informative = only_informative,non_inf = non_inf,...)
   }
   mtext(3,outer = T,text = main,cex = 1.3)
+  par(opar)
 }
