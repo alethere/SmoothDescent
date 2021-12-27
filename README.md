@@ -14,4 +14,7 @@ install.packages("file/location/SmoothDescent_0.1.0.tar.gz", repos = NULL)
 ```
 
 # Vignette
-You can preview the [vignette here](https://htmlpreview.github.io/?https://github.com/Alethere/SmoothDescent/blob/master/vignettes/SmoothDescent_vignette.html)
+You can preview the [vignette here](https://htmlpreview.github.io/?https://github.com/Alethere/SmoothDescent/blob/master/vignettes/SmoothDescent_vignette.html), although some of the formatting does not work through github. You can also install the vignette by using the code below (will take a couple minutes).
+```
+devtools::install_github("https://github.com/Alethere/SmoothDescent", build_vignette = T)
+```
