@@ -6,12 +6,12 @@ This repository contains R code for a package implementing the Smooth Descent al
 # Installation
 Install using `devtools`:
 ```
-devtools::install_github("https://github.com/Alethere/SmoothDescent")
+devtools::install_github("https://github.com/alethere/SmoothDescent")
 ```
 
 # Vignette
-You can preview the [vignette here](https://htmlpreview.github.io/?https://github.com/Alethere/SmoothDescent/blob/master/doc/SmoothDescent_vignette.html), although some of the formatting does not work through github. You can also install the vignette and view it locally by using the code below (will take a couple minutes).
+You can preview the [vignette here](https://htmlpreview.github.io/?https://github.com/alethere/SmoothDescent/blob/master/doc/SmoothDescent_vignette.html), although some of the formatting does not work through github. You can also install the vignette and view it locally by using the code below (will take a couple minutes).
 ```
-devtools::install_github("https://github.com/Alethere/SmoothDescent", build_vignette = T)
+devtools::install_github("https://github.com/alethere/SmoothDescent", build_vignette = T)
 browseVignettes("SmoothDescent")
 ```
