@@ -15,6 +15,7 @@ library(knitr)
 sd1 <- smooth_descent(geno = geno, homologue = hom, map = map,
                       ploidy = 2, p1name = "P1", p2name = "P2")
 
+
 #The observed IBD matrix
 graphical_genotype(sd1$obsIBD)
 #The predicted IBD matrix
@@ -26,13 +27,17 @@ graphical_genotype(sd1$newIBD)
 
 knitr::kable(sd1$newgeno[1:10,1:10])
 
-## -----------------------------------------------------------------------------
-#There's no preliminary map made in this example, so it's calculated at the beggining
-#mappin_ndim = 2 is less accurate than mapping_ndim = 3 but faster.
-sm1 <- smooth_map(geno = geno, homologue = hom ,
-                  ploidy = 2, p1name = "P1", p2name = "P2",
-                  mapping_ndim = 2)
+## ---- eval = F----------------------------------------------------------------
+#  #There's no preliminary map made in this example, so it's calculated at the beggining
+#  #We do not evaluate this chunk to build the vignette faster
+#  #Results equivalent to sd_iter$iter1
+#  sm1 <- smooth_map(geno = geno, homologue = hom ,
+#                    ploidy = 2, p1name = "P1", p2name = "P2",
+#                    mapping_ndim = 3)
 
+## -----------------------------------------------------------------------------
+#Using the stored object to build the vignette faster
+sm1 <- sd_iter$iter1
 #Same outputs as before, plus a newmap, recdist and r2 parameters
 graphical_genotype(sm1$predIBD)
 
@@ -45,10 +50,17 @@ recdist_plot(sm1$recdist)
 iterplot(list(premap = sm1$oldmap,iter1 = sm1$newmap),
          main = "Two map comparison")
 
+## ----eval = F-----------------------------------------------------------------
+#  #We do not run this code to build the vignette faster
+#  #results are equivalent to sd_iter object
+#  sm5 <- smooth_map_iter(geno = geno, homologue = hom, iters = 5,
+#                      ploidy = 2, p1name = "P1", p2name = "P2",
+#                      mapping_ndim = 3, verbose = F)
+#  
+
 ## -----------------------------------------------------------------------------
-sm5 <- smooth_map_iter(geno = geno, homologue = hom, iters = 5,
-                    ploidy = 2, p1name = "P1", p2name = "P2",
-                    mapping_ndim = 2, verbose = F)
+#Use stored object for a faster vignette building
+sm5 <- sd_iter
 
 #The results of each iteration are equivalent to the output of smooth_map()
 graphical_genotype(sm5$iter1$predIBD)
@@ -76,14 +88,16 @@ knitr::kable(map[1:15,])
 sd1 <- smooth_descent(geno,hom,map, 
                       ploidy = 2, p1name = "P1", p2name = "P2")
 
-## -----------------------------------------------------------------------------
-sm1 <- smooth_map(geno,hom,map, 
-                  ploidy = 2, p1name = "P1", p2name = "P2")
+## ---- eval = F----------------------------------------------------------------
+#  #Result equivalent to sd_iter$iter1
+#  sm1 <- smooth_map(geno,hom,map,
+#                    ploidy = 2, p1name = "P1", p2name = "P2")
 
-## -----------------------------------------------------------------------------
-sm5 <- smooth_map_iter(geno,hom,map, iters = 5,
-                       ploidy = 2, p1name = "P1", p2name = "P2",
-                       verbose = F)
+## ---- eval = F----------------------------------------------------------------
+#  #Result equivalent to sd_iter
+#  sm5 <- smooth_map_iter(geno,hom,map, iters = 5,
+#                         ploidy = 2, p1name = "P1", p2name = "P2",
+#                         verbose = F)
 
 ## -----------------------------------------------------------------------------
 #Outputs of smooth descent

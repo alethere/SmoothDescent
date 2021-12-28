@@ -43,6 +43,7 @@ If you already have a map and just want to obtain IBDs, error probabilities and 
 sd1 <- smooth_descent(geno = geno, homologue = hom, map = map,
                       ploidy = 2, p1name = "P1", p2name = "P2")
 
+
 #The observed IBD matrix
 graphical_genotype(sd1$obsIBD)
 #The predicted IBD matrix
@@ -57,13 +58,18 @@ knitr::kable(sd1$newgeno[1:10,1:10])
 
 ## One smoothing and mapping round
 If you want to use improved genotypes to estimate a new order with a single round of mapping, you can use `smooth_map()`. You can provide a preliminary order or let the program estimate it automatically.
-```{r}
+```{r, eval = F}
 #There's no preliminary map made in this example, so it's calculated at the beggining
-#mappin_ndim = 2 is less accurate than mapping_ndim = 3 but faster.
+#We do not evaluate this chunk to build the vignette faster
+#Results equivalent to sd_iter$iter1
 sm1 <- smooth_map(geno = geno, homologue = hom ,
                   ploidy = 2, p1name = "P1", p2name = "P2",
-                  mapping_ndim = 2)
+                  mapping_ndim = 3)
+```
 
+```{r}
+#Using the stored object to build the vignette faster
+sm1 <- sd_iter$iter1
 #Same outputs as before, plus a newmap, recdist and r2 parameters
 graphical_genotype(sm1$predIBD)
 ```
@@ -79,10 +85,18 @@ iterplot(list(premap = sm1$oldmap,iter1 = sm1$newmap),
 
 ## Iterative smoothing
 If you want to apply smooth descent iteratively and re-compute a linkage map each iteration, you can use `smooth_map_iter()` which does so automatically. To access the output the `extract()` function is quite useful.
-```{r}
+```{r,eval = F}
+#We do not run this code to build the vignette faster
+#results are equivalent to sd_iter object
 sm5 <- smooth_map_iter(geno = geno, homologue = hom, iters = 5,
                     ploidy = 2, p1name = "P1", p2name = "P2",
-                    mapping_ndim = 2, verbose = F)
+                    mapping_ndim = 3, verbose = F)
+
+```
+
+```{r}
+#Use stored object for a faster vignette building
+sm5 <- sd_iter
 
 #The results of each iteration are equivalent to the output of smooth_map()
 graphical_genotype(sm5$iter1$predIBD)
@@ -132,19 +146,22 @@ sd1 <- smooth_descent(geno,hom,map,
 ```
 
 We can also obtain an improved map based on the newly estimated genotypes, and using our preliminary map as a starting order. The mapping is the slowest part of the process.
-```{r}
+```{r, eval = F}
+#Result equivalent to sd_iter$iter1
 sm1 <- smooth_map(geno,hom,map, 
                   ploidy = 2, p1name = "P1", p2name = "P2")
 ```
 
 If we want to run multiple iterations we can use `smooth_map_iter()`
-```{r}
+```{r, eval = F}
+#Result equivalent to sd_iter
 sm5 <- smooth_map_iter(geno,hom,map, iters = 5,
                        ploidy = 2, p1name = "P1", p2name = "P2",
                        verbose = F)
 ```
 
 If we're using `smooth_map()` or `smooth_map_iter()` the preliminary map is not necessary, and if not given it will be estimated at the beggining of the process. In both cases, the `mapping_ndim` parameter indicates the dimensions to use in `MDSmap` (2 or 3), 3 is more accurate but also quite slower. The `ncores` parameter can also be indicated, which uses parallelization for linkage estimation and speeds up the process.
+
 
 ## IBD outputs
 
