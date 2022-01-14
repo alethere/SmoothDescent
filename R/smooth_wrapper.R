@@ -30,6 +30,9 @@
 #' @param prediction_threshold float, probability threshold for imputing new genotypes.
 #' All new genotypes with a probability under this threshold will be considered uncertain.
 #' Defaults to 0.8.
+#' @param prediction_points numeric, number of points to use for IBD prediction. If NULL, all
+#' points in map$position are used, otherwise n equally spaced points are used. Greatly
+#' improves efficiency if the number of markers is very large.
 #' @param error_threshold numeric, threshold over which a marker is considered erroneous.
 #' Usually 0.8 should be good enough to be sensitive but stringent (not have false positives)
 #' @param non_inf numeric, lower and upper probability boundaries to consider an
@@ -68,6 +71,7 @@ smooth_descent <- function(geno,
                            p2name = NULL,
                            prediction_interval = 10,
                            prediction_threshold = 0.8,
+                           prediction_points = NULL,
                            error_threshold = 0.8,
                            non_inf = c(0.3,0.7),
                            verbose = T){
@@ -103,8 +107,8 @@ smooth_descent <- function(geno,
 
 
   ## Error estimation ##
-  if(is.null(p1name)) p1name <- 1
-  if(is.null(p2name)) p2name <- 2
+  if(is.null(p1name)) p1name <- colnames(geno)[1]
+  if(is.null(p2name)) p2name <- colnames(geno)[2]
   parentcols <- list(p1 = 1:ploidy,
                      p2 = (ploidy+1):ncol(homologue))
   genocols <- which(colnames(geno) %in% c(p1name,p2name))
@@ -117,7 +121,8 @@ smooth_descent <- function(geno,
                           ploidy = ploidy)
 
   talk("Predicting IBD\n")
-  predIBD <- predict_IBD(obsIBD, map, interval = prediction_interval,non_inf = non_inf)
+  predIBD <- predict_IBD(obsIBD, map, interval = prediction_interval,non_inf = non_inf,
+                         pred_points = prediction_points)
   talk("Detecting errors\n")
   errors <- lapply(1:length(obsIBD),function(i){
     err <- abs(obsIBD[[i]] - predIBD[[i]]) > error_threshold
@@ -218,6 +223,9 @@ smooth_descent <- function(geno,
 #' @param prediction_threshold float, probability threshold for imputing new genotypes.
 #' All new genotypes with a probability under this threshold will be considered uncertain.
 #' Defaults to 0.8.
+#' @param prediction_points numeric, number of points to use for IBD prediction. If NULL, all
+#' points in map$position are used, otherwise n equally spaced points are used. Greatly
+#' improves efficiency if the number of markers is very large.
 #' @param error_threshold numeric, threshold over which a marker is considered erroneous.
 #' Usually 0.8 should be good enough to be sensitive but stringent (not have false positives)
 #' @param ncores number of cores to use for linkage estimation.
@@ -270,6 +278,7 @@ smooth_map <- function(geno,
                       p2name = NULL,
                       prediction_interval = 10,
                       prediction_threshold = 0.8,
+                      prediction_points = NULL,
                       error_threshold = 0.8,
                       ncores = 1,
                       mapping_ndim = 2,
@@ -280,13 +289,13 @@ smooth_map <- function(geno,
   talk <- function(msg){
     if(verbose) cat(msg)
   }
+  if(is.null(p1name)) p1name <- colnames(geno)[1]
+  if(is.null(p2name)) p2name <- colnames(geno)[2]
 
   #In case the preliminary map has not been given, or
   #a new map should be estimated, we calculate a new one
   if(is.null(map) | estimate_premap){
     talk("Estimating preliminary map\n")
-    if(is.null(p1name)) p1name <- colnames(geno)[1]
-    if(is.null(p2name)) p2name <- colnames(geno)[2]
 
     linkdf <- linkdf_shortcut(geno = as.matrix(geno),ploidy = ploidy,
                               p1name = p1name, p2name = p2name,
@@ -312,6 +321,7 @@ smooth_map <- function(geno,
                  ploidy = ploidy, p1name = p1name, p2name = p2name,
                  prediction_interval = prediction_interval,
                  prediction_threshold = prediction_threshold,
+                 prediction_points = prediction_points,
                  error_threshold = error_threshold,
                  verbose = verbose)
 
@@ -368,6 +378,9 @@ smooth_map <- function(geno,
 #' @param prediction_threshold float, probability threshold for imputing new genotypes.
 #' All new genotypes with a probability under this threshold will be considered uncertain.
 #' Defaults to 0.8.
+#' @param prediction_points numeric, number of points to use for IBD prediction. If NULL, all
+#' points in map$position are used, otherwise n equally spaced points are used. Greatly
+#' improves efficiency if the number of markers is very large.
 #' @param error_threshold numeric, threshold over which a marker is considered erroneous.
 #' Usually 0.8 should be good enough to be sensitive but stringent (not have false positives)
 #' @param ncores number of cores to use for linkage estimation.
@@ -422,6 +435,7 @@ smooth_map_iter <- function(geno,
                             p2name = NULL,
                             prediction_interval = 10,
                             prediction_threshold = 0.8,
+                            prediction_points = NULL,
                             error_threshold = 0.8,
                             ncores = 1,
                             mapping_ndim = 2,
@@ -458,7 +472,8 @@ smooth_map_iter <- function(geno,
                  error_threshold = err[i],
                  ncores = ncores,
                  mapping_ndim = mapping_ndim, estimate_premap = estimate_premap,
-                 max_distance = max_distance, verbose = verbose))
+                 max_distance = max_distance, verbose = verbose,
+                 prediction_points = prediction_points))
     }else{
       #In the next iterations, a new starting map and new genotype is used
       if(class(this_iter) == "try-error") next
@@ -472,6 +487,7 @@ smooth_map_iter <- function(geno,
                               p2name = p2name,
                               prediction_interval = prediction_interval,
                               prediction_threshold = prediction_threshold,
+                              prediction_points = prediction_points,
                               error_threshold = err[i],
                               ncores = ncores,
                               mapping_ndim = mapping_ndim,

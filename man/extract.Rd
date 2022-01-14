@@ -7,21 +7,25 @@
 extract(l, index = 1, simplify = T)
 }
 \arguments{
-\item{l}{list of elements with identical structure}
+\item{l}{list of elements with identical structure.}
 
-\item{index}{numeric, character or logical to be applied to each element of list}
+\item{index}{numeric or character to be applied to each element of list.
+Logicals can also be used, but will not work well with lists of lists.}
 
-\item{simplify}{should the output be simplified}
+\item{simplify}{should the output be simplified?}
 }
 \value{
 list, vector or matrix of extracted objects
 }
 \description{
 Given a list of identical objects, extract the same index of each object.
-This is a shortcut for `sapply(list,'[[',index)`
+This can be used to extract the same column from a list of matrices,
+the same index from a list of vectors or the same element from a list of lists.
+Multiple indeces can be provided.
 }
 \examples{
 example <- list(data.frame(A = "first dataframe", B = "second argument"),
-data.frame(A = "second dataframe", B = "second argument"))
+    data.frame(A = "second dataframe", B = "second argument"))
+#From each data.frame extract column A
 extract(example,"A")
 }

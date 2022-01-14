@@ -7,13 +7,41 @@
 \alias{predict_IBD.numeric}
 \title{Predict IBD}
 \usage{
-predict_IBD(IBD, map, interval = 10, method = "kosambi", non_inf = c(0.3, 0.7))
+predict_IBD(
+  IBD,
+  map,
+  interval = 10,
+  method = "kosambi",
+  non_inf = c(0.3, 0.7),
+  pred_points = NULL
+)
 
-\method{predict_IBD}{list}(IBD, map, interval = 10, method = "kosambi", non_inf = c(0.3, 0.7))
+\method{predict_IBD}{list}(
+  IBD,
+  map,
+  interval = 10,
+  method = "kosambi",
+  non_inf = c(0.3, 0.7),
+  pred_points = NULL
+)
 
-\method{predict_IBD}{matrix}(IBD, map, interval = 10, method = "kosambi", non_inf = c(0.3, 0.7))
+\method{predict_IBD}{matrix}(
+  IBD,
+  map,
+  interval = 10,
+  method = "kosambi",
+  non_inf = c(0.3, 0.7),
+  pred_points = NULL
+)
 
-\method{predict_IBD}{numeric}(IBD, map, interval = 10, method = "kosambi", non_inf = c(0.3, 0.7))
+\method{predict_IBD}{numeric}(
+  IBD,
+  map,
+  interval = 10,
+  method = "kosambi",
+  non_inf = c(0.3, 0.7),
+  pred_points = NULL
+)
 }
 \arguments{
 \item{IBD}{observed IBD. Can be given as a vector containing the
@@ -33,6 +61,10 @@ between distance and recombination (is inaccurate for large distances).}
 bound for probabilities to be considered non-informative. These probabilities will be
 ignored during prediction. By default 0.3 and 0.7. Symmetric and stringent thresholds
 are recommended.}
+
+\item{pred_points}{numeric, number of points to use for IBD prediction. If NULL, all
+points in map$position are used, otherwise n equally spaced points are used. Greatly
+improves efficiency if the number of markers is very large.}
 }
 \value{
 the output will have the same format as the input given. That is, an input

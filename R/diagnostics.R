@@ -89,7 +89,7 @@ rec_count.matrix <- function(ibd,map,non_inf = c(0.3,0.7)){
 #' for all parental homologues.
 rec_count.list <- function(ibd,map,non_inf = c(0.3,0.7)){
 
-  recs <- lapply(ibd,rec_count.matrix,map = map,non_inf = non_inf)
+  recs <- lapply(ibd,rec_count,map = map,non_inf = non_inf)
 
   parentindex <- list(p1=1:(length(ibd)/2),
                       p2 = (length(ibd)/2+1):length(ibd))

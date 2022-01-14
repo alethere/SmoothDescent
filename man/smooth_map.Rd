@@ -13,6 +13,7 @@ smooth_map(
   p2name = NULL,
   prediction_interval = 10,
   prediction_threshold = 0.8,
+  prediction_points = NULL,
   error_threshold = 0.8,
   ncores = 1,
   mapping_ndim = 2,
@@ -47,6 +48,10 @@ step. It should be specified in the same units as the "position" in the map.}
 \item{prediction_threshold}{float, probability threshold for imputing new genotypes.
 All new genotypes with a probability under this threshold will be considered uncertain.
 Defaults to 0.8.}
+
+\item{prediction_points}{numeric, number of points to use for IBD prediction. If NULL, all
+points in map$position are used, otherwise n equally spaced points are used. Greatly
+improves efficiency if the number of markers is very large.}
 
 \item{error_threshold}{numeric, threshold over which a marker is considered erroneous.
 Usually 0.8 should be good enough to be sensitive but stringent (not have false positives)}

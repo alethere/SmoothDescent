@@ -21,6 +21,9 @@
 #' bound for probabilities to be considered non-informative. These probabilities will be
 #' ignored during prediction. By default 0.3 and 0.7. Symmetric and stringent thresholds
 #' are recommended.
+#' @param pred_points numeric, number of points to use for IBD prediction. If NULL, all
+#' points in map$position are used, otherwise n equally spaced points are used. Greatly
+#' improves efficiency if the number of markers is very large.
 #'
 #'
 #' @return the output will have the same format as the input given. That is, an input
@@ -41,7 +44,8 @@
 #' pred <- predict_IBD(IBD[[1]], map)
 #' #Or all homologues
 #' pred <- predict_IBD(IBD, map)
-predict_IBD <- function(IBD,map,interval = 10, method = "kosambi", non_inf = c(0.3,0.7)){
+predict_IBD <- function(IBD,map,interval = 10, method = "kosambi",
+                        non_inf = c(0.3,0.7),pred_points = NULL){
   type <- class(IBD)
   if(type[1] == "list"){
     types <- sapply(IBD,function(i) is.matrix(i) | is.numeric(i))
@@ -51,7 +55,8 @@ predict_IBD <- function(IBD,map,interval = 10, method = "kosambi", non_inf = c(0
       stop("This type of list is not supported. All elements must be matrices or named numerics")
     }
   }else if(type[1] == "data.frame"){
-    predict_IBD.matrix(IBD,map,interval, method = method, non_inf = non_inf)
+    predict_IBD(IBD,map,interval, method = method,
+                       non_inf = non_inf,pred_points = pred_points)
   }
 
   UseMethod("predict_IBD",IBD)
@@ -64,9 +69,10 @@ predict_IBD <- function(IBD,map,interval = 10, method = "kosambi", non_inf = c(0
 #'
 #' @describeIn predict_IBD Function for a list of matrices
 #' @export
-predict_IBD.list <- function(IBD,map,interval = 10,method = "kosambi", non_inf = c(0.3,0.7)){
+predict_IBD.list <- function(IBD,map,interval = 10,method = "kosambi",
+                             non_inf = c(0.3,0.7), pred_points = NULL){
   lapply(IBD,predict_IBD, map = map, interval = interval,
-         method = method, non_inf = non_inf)
+         method = method, non_inf = non_inf,pred_points = pred_points)
 }
 
 #Method to apply IBD prediction to a single matrix. It calls upon the numeric method.
@@ -76,7 +82,8 @@ predict_IBD.list <- function(IBD,map,interval = 10,method = "kosambi", non_inf =
 #'
 #' @describeIn predict_IBD Function for a single matrix
 #' @export
-predict_IBD.matrix <- function(IBD,map,interval = 10,method = "kosambi", non_inf = c(0.3,0.7)){
+predict_IBD.matrix <- function(IBD,map,interval = 10,method = "kosambi", non_inf = c(0.3,0.7),
+                               pred_points = NULL){
   if(nrow(IBD) == 0) return(NULL)
   if(is.null(rownames(IBD))) stop("IBD matrix should contain rownames")
   if(!"marker" %in% colnames(map)) stop("Map data.frame should contain a \"marker\" column")
@@ -93,9 +100,21 @@ predict_IBD.matrix <- function(IBD,map,interval = 10,method = "kosambi", non_inf
   IBD <- IBD[map$marker,]
   IBD[IBD > non_inf[1] & IBD < non_inf[2]] <- NA
 
-  pred <- lapply(1:nrow(map),function(i){
-    #Compute weights for each marker (they are the same accross columns)
-    distance <- abs(map$position[i]-map$position)
+  #Here parallelism could be added
+  #Or an estimation procedure based on points rather than markers
+  if(!is.null(pred_points)){
+    est_points <- seq(from = min(map$position),
+                      to = max(map$position),
+                      length.out = pred_points)
+  }else{
+    #By default we estimate per each point on the map
+    est_points <- map$position
+  }
+
+  pred <- lapply(est_points,function(p){
+    #First we compute distance of all markers to the estimation point
+    distance <- abs(p - map$position)
+    #Then we obtain the weights and the nearby markers
     weights <- 1 - r_from_dist(distance,method)
     close_marks <- distance < interval & distance != 0
 
@@ -108,7 +127,17 @@ predict_IBD.matrix <- function(IBD,map,interval = 10,method = "kosambi", non_inf
     colSums(wibd,na.rm = T)/colSums(wmat,na.rm = T)
   })
   pred <- do.call(rbind,pred)
+
+  #If we use point-based estimation, we must re-dimension result
+  #to fit the number of markers in the map
+  if(!is.null(pred_points)){
+    closest_est_points <- sapply(map$position,function(p){
+      which.min(abs(est_points - p))
+    })
+    pred <- pred[closest_est_points,]
+  }
   rownames(pred) <- rownames(IBD)
+
   return(pred)
 }
 
@@ -116,7 +145,10 @@ predict_IBD.matrix <- function(IBD,map,interval = 10,method = "kosambi", non_inf
 #'
 #' @describeIn predict_IBD Function for a numeric vector
 #' @export
-predict_IBD.numeric <- function(IBD,map,interval = 10,method = "kosambi", non_inf = c(0.3,0.7)){
+predict_IBD.numeric <- function(IBD,map,interval = 10,
+                                method = "kosambi",
+                                non_inf = c(0.3,0.7),
+                                pred_points = NULL){
   if(!"position" %in% colnames(map)) stop("Map data.frame should contain a \"position\" column")
   if(!"marker" %in% colnames(map)) stop("Map data.frame should contain a \"marker\" column")
   if(is.null(names(IBD))) stop("IBD vector should be named")
@@ -131,16 +163,36 @@ predict_IBD.numeric <- function(IBD,map,interval = 10,method = "kosambi", non_in
   # IBD[IBD == non_inf] <- NA
   IBD[IBD > non_inf[1] & IBD < non_inf[2]] <- NA
   #To ensure position and IBD vectors are in the same order
-  position <- map$position
-  names(position) <- map$marker
-  position <- position[names(IBD)]
-  sapply(1:length(IBD),function(i){
-    distance <- abs(position - position[i])
-    local_d <- distance < interval & !is.na(IBD)
+  IBD <- IBD[map$marker]
+
+  #Or an estimation procedure based on points rather than markers
+  if(!is.null(pred_points)){
+    est_points <- seq(from = min(map$position),
+                      to = max(map$position),
+                      length.out = pred_points)
+  }else{
+    #By default we estimate per each point on the map
+    est_points <- map$position
+  }
+
+  #Here parallelism could be added
+  pred <- sapply(est_points,function(p){
+    distance <- abs(map$position - p)
+    local_d <- distance < interval & distance != 0
     weights <- 1 - r_from_dist(distance[local_d],method = method)
     weights <- weights/sum(weights)
     sum(IBD[local_d]*weights)
   })
+  #If we use point-based estimation, we must re-dimension result
+  #to fit the number of markers in the map
+  if(!is.null(pred_points)){
+    closest_est_points <- sapply(map$position,function(p){
+      which.min(abs(est_points - p))
+    })
+    pred <- pred[closest_est_points]
+  }
+  names(pred) <- names(IBD)
+  return(pred)
 }
 
 #Reverse mapping functions --------
