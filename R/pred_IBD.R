@@ -180,8 +180,9 @@ predict_IBD.numeric <- function(IBD,map,interval = 10,
     distance <- abs(map$position - p)
     local_d <- distance < interval & distance != 0
     weights <- 1 - r_from_dist(distance[local_d],method = method)
-    weights <- weights/sum(weights)
-    sum(IBD[local_d]*weights)
+    inf <- !is.na(IBD[local_d])
+    weights <- weights[inf]/sum(weights[inf])
+    sum(IBD[local_d][inf]*weights)
   })
   #If we use point-based estimation, we must re-dimension result
   #to fit the number of markers in the map
