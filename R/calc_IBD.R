@@ -148,7 +148,7 @@ calc_IBD.numeric <- function(geno,p1hom,p2hom,ploidy = 2){
 #' Calculation of IBD for multiple markers and/or individuals
 #'
 #' @describeIn calc_IBD Function for handling matrix input to calc_IBD
-calc_IBD2.matrix <- function(geno,p1hom,p2hom,ploidy = 2){
+calc_IBD.matrix <- function(geno,p1hom,p2hom,ploidy = 2){
   if(is.vector(geno)){
     nams <- names(geno)
     geno <- matrix(geno,ncol = 1)
