@@ -205,6 +205,10 @@ calc_IBD.matrix <- function(geno,p1hom,p2hom,ploidy = 2){
       res[[j]][cases[[i]]] <- prob[j]
     }
   }
+  for(i in 1:length(res)){
+    dimnames(res[[i]]) <- dimnames(geno)
+  }
+
 
   names(res) <- c(colnames(p1hom),colnames(p2hom))
   return(res)
