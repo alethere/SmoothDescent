@@ -382,7 +382,7 @@ print(paste0("With decreased stringency we impute ",
 ```
 In this example there are no erroneous markers with low IBD probabilities, so decreasing the prediction threshold has no effect. 
 
-## Prediction points
+### Prediction points
 Normally, IBD prediction happens per marker, so there's as many steps as number of markers. For datasets with large marker numbers (thousands of markers), this can be very slow and add very little information to the estimation.Instead of computing a predicted IBD independently for each marker, one can predict IBD at a limited number of points along the chromosome and then use that output to estimate the predicted IBD at each marker. We recommend using somewhere around 1000 steps, so it only makes sense to use this feature if you have >1000 markers along your chromosome.
 
 To activte this behaviour you can specify a number of steps by using the `prediction_points` argument. To illustrate this behaviour we'll force the prediction to happen at 1000 points or 10 points only.
