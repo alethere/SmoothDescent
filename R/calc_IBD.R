@@ -148,7 +148,7 @@ calc_IBD.numeric <- function(geno,p1hom,p2hom,ploidy = 2){
 #' Calculation of IBD for multiple markers and/or individuals
 #'
 #' @describeIn calc_IBD Function for handling matrix input to calc_IBD
-calc_IBD.matrix <- function(geno,p1hom,p2hom,ploidy = 2){
+calc_IBD2.matrix <- function(geno,p1hom,p2hom,ploidy = 2){
   if(is.vector(geno)){
     nams <- names(geno)
     geno <- matrix(geno,ncol = 1)
@@ -169,43 +169,45 @@ calc_IBD.matrix <- function(geno,p1hom,p2hom,ploidy = 2){
   #To save time, we only calculate each unique case
   #To identify unique cases we transform the data into one long vector
   #This is memory expensive, might need to rework for big individual x genotype matrices
-  nmark <- nrow(geno)
-  nind <- ncol(geno)
-  genovec <- as.vector(geno)
-  names(genovec) <- rep(rownames(geno),nind)
-  p1hom <- p1hom[names(genovec),]
-  p2hom <- p2hom[names(genovec),]
+  #Alterative method to identify cases
+  homcases <- apply(cbind(p1hom,p2hom),1,paste0,collapse = "_")
+  unhom <- unique(homcases)
+  ung <- unique(as.vector(geno))
 
-  #First identify the number of combinations
-  data <- data.frame(geno = genovec, p1hom, p2hom)
-  parentcols <- list(p1 = 2:(ncol(p1hom)+1),
-                     p2 = (ncol(p1hom)+2):ncol(data))
-  comb <- apply(data,1,paste,collapse = "_")
-  marks <- 1:nrow(data)
-  cases <- split(marks,comb)
+  whichom <- lapply(unhom,function(h) homcases == h)
+  whichg <- lapply(ung, function(g) geno == g)
+
+  cases <- lapply(whichg,function(g){
+    lapply(whichom, function(h){
+      mh <- matrix(rep(h,ncol(g)),nrow = length(h))
+      which(as.logical(mh*g))
+    })
+  })
+  cases <- unlist(cases,recursive = F)
+  names(cases) <- apply(expand.grid(unhom,ung),1,paste,collapse = "_")
 
   #Then we fill in a result matrix
   #we only calculate one time each combination
-  res <- matrix(0,ncol = ncol(data) -1,nrow = nrow(data))
-  rownames(res) <- names(genovec)
+  matfill <- rep(NA, (ncol(p1hom) + ncol(p2hom)))
+  res <- lapply(matfill,matrix,
+                ncol = ncol(geno),
+                nrow = nrow(geno))
+  parentcols <- list(p1 = 1:ncol(p1hom),
+                     p2 = ncol(p1hom) + 1:ncol(p2hom))
   for(i in 1:length(cases)){
     cas <- names(cases)[i]
     dat <- suppressWarnings(as.numeric(strsplit(cas,"_")[[1]]))
-    prob <- calc_IBD.numeric(geno = dat[1],p1hom = dat[parentcols$p1],
+
+    prob <- calc_IBD.numeric(geno = dat[ncol(p1hom) + ncol(p2hom) + 1],
+                             p1hom = dat[parentcols$p1],
                              p2hom = dat[parentcols$p2],ploidy = ploidy)
-    res[cases[[i]],] <- rep(prob,each = length(cases[[i]]))
+    for(j in 1:length(res)){
+      res[[j]][cases[[i]]] <- prob[j]
+    }
   }
 
-  #We then reform the output into one homologue list.
-  homlist <- lapply(1:ncol(res),function(i){
-    x <- res[,i]
-    res <- matrix(x,ncol = nind, nrow= nmark)
-    rownames(res) <- rownames(geno)
-    colnames(res) <- colnames(geno)
-    return(res)
-  })
-  names(homlist) <- c(colnames(p1hom),colnames(p2hom))
-  return(homlist)
+  names(res) <- c(colnames(p1hom),colnames(p2hom))
+  return(res)
 }
 
 
