@@ -238,6 +238,23 @@ print(paste0("With decreased stringency we impute ",
              round(small_change*100,2),"% of genotypes"))
 
 ## -----------------------------------------------------------------------------
+sd_default <- smooth_descent(geno = geno, homologue = hom, map = map,
+                             ploidy = 2, p1name = "P1", p2name = "P2",
+                             verbose = F)
+sd_many_points <- smooth_descent(geno = geno, homologue = hom, map = map,
+                             ploidy = 2, p1name = "P1", p2name = "P2",
+                             verbose = F, prediction_points = 1000)
+sd_less_points <- smooth_descent(geno = geno, homologue = hom, map = map,
+                             ploidy = 2, p1name = "P1", p2name = "P2",
+                             verbose = F, prediction_points = 10)
+
+comparison <- lapply(list(default = sd_default$predIBD, 
+                          many = sd_many_points$predIBD, 
+                          less = sd_less_points$predIBD),extract,"Ind03")
+
+graphical_genotype(comparison)
+
+## -----------------------------------------------------------------------------
 #Here we will test the effect of error thresholds
 sd_default <- smooth_descent(geno = geno, homologue = hom, map = map,
                              ploidy = 2, p1name = "P1", p2name = "P2",

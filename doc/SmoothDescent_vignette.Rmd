@@ -382,6 +382,30 @@ print(paste0("With decreased stringency we impute ",
 ```
 In this example there are no erroneous markers with low IBD probabilities, so decreasing the prediction threshold has no effect. 
 
+## Prediction points
+Normally, IBD prediction happens per marker, so there's as many steps as number of markers. For datasets with large marker numbers (thousands of markers), this can be very slow and add very little information to the estimation.Instead of computing a predicted IBD independently for each marker, one can predict IBD at a limited number of points along the chromosome and then use that output to estimate the predicted IBD at each marker. We recommend using somewhere around 1000 steps, so it only makes sense to use this feature if you have >1000 markers along your chromosome.
+
+To activte this behaviour you can specify a number of steps by using the `prediction_points` argument. To illustrate this behaviour we'll force the prediction to happen at 1000 points or 10 points only.
+```{r}
+sd_default <- smooth_descent(geno = geno, homologue = hom, map = map,
+                             ploidy = 2, p1name = "P1", p2name = "P2",
+                             verbose = F)
+sd_many_points <- smooth_descent(geno = geno, homologue = hom, map = map,
+                             ploidy = 2, p1name = "P1", p2name = "P2",
+                             verbose = F, prediction_points = 1000)
+sd_less_points <- smooth_descent(geno = geno, homologue = hom, map = map,
+                             ploidy = 2, p1name = "P1", p2name = "P2",
+                             verbose = F, prediction_points = 10)
+
+comparison <- lapply(list(default = sd_default$predIBD, 
+                          many = sd_many_points$predIBD, 
+                          less = sd_less_points$predIBD),extract,"Ind03")
+
+graphical_genotype(comparison)
+```
+
+With many points the results are almost identical with the default, even in this case where there's relatively low marker density. In a higher density example the differences would be even smaller. With few points the results are clearly worse, since we've only calculated IBD at 10 points and extrapolated that to all markers.
+
 ### Error threshold
 During the error assignment step, all markers that have an error probability above this threshold will be considered errors. The default of 0.8 works quite well, but if you want to be very stringent you could lower it. Values below 0.5 might yield strange output, since markers with larger probability of not being an error would be assigned to the error category too. 
 
