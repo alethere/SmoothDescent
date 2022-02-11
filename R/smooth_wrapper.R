@@ -74,9 +74,11 @@ smooth_descent <- function(geno,
                            prediction_points = NULL,
                            error_threshold = 0.8,
                            non_inf = c(0.3,0.7),
-                           verbose = T){
-  talk <- function(msg){
-    if(verbose) cat(msg)
+                           verbose = T,
+                           obs.method = "naive",
+                           pred.method = "prediction"){
+  talk <- function(...){
+    if(verbose) cat(...)
   }
   ## INPUT CHECK ##
   assertthat::assert_that(!is.null(rownames(geno)))
@@ -105,6 +107,11 @@ smooth_descent <- function(geno,
   geno <- geno[map$marker,]
   homologue <- homologue[map$marker,]
 
+  #Matching parameters
+  obs.method <- match.arg(obs.method,c("naive","heuristic"))
+  pred.method <- match.arg(pred.method,c("prediction","hmm"))
+  talk("Will estimate errors with",obs.method,"-",pred.method,"combination\n")
+
 
   ## Error estimation ##
   if(is.null(p1name)) p1name <- colnames(geno)[1]
@@ -114,15 +121,24 @@ smooth_descent <- function(geno,
   genocols <- which(colnames(geno) %in% c(p1name,p2name))
 
   talk("Obtaining IBD\n")
-  #The parents should not be included in the IBD calculation
-  obsIBD <- calc_IBD(geno = as.matrix(geno[,-genocols]),
-                          p1hom = as.matrix(homologue[,parentcols$p1]),
-                          p2hom = as.matrix(homologue[,parentcols$p2]),
-                          ploidy = ploidy)
+  obsIBD <- calc_IBD(geno = as.matrix(geno),
+                      p1hom = as.matrix(homologue[,parentcols$p1]),
+                      p2hom = as.matrix(homologue[,parentcols$p2]),
+                      ploidy = ploidy,map = map, p1name = p1name, p2name = p2name,
+                     method = obs.method)
 
   talk("Predicting IBD\n")
-  predIBD <- predict_IBD(obsIBD, map, interval = prediction_interval,non_inf = non_inf,
-                         pred_points = prediction_points)
+  if(pred.method == "hmm"){
+    predIBD <- calc_IBD(geno = as.matrix(geno),
+                        p1hom = as.matrix(homologue[,parentcols$p1]),
+                        p2hom = as.matrix(homologue[,parentcols$p2]),
+                        ploidy = ploidy,map = map, p1name = p1name, p2name = p2name,
+                        method = "hmm")
+  }else if(pred.method == "prediction"){
+    predIBD <- predict_IBD(obsIBD, map, interval = prediction_interval,non_inf = non_inf,
+                           pred_points = prediction_points)
+  }
+
   talk("Detecting errors\n")
   errors <- lapply(1:length(obsIBD),function(i){
     err <- abs(obsIBD[[i]] - predIBD[[i]]) > error_threshold
@@ -143,7 +159,9 @@ smooth_descent <- function(geno,
                 error = errors,
                 newIBD = obsIBD,
                 oldgeno = geno,
-                newgeno = geno)
+                newgeno = geno,
+                obs.method = obs.method,
+                pred.method = pred.method)
 
   }else{
     newIBD <- lapply(1:length(obsIBD),function(i){
@@ -175,7 +193,9 @@ smooth_descent <- function(geno,
                 error = errors,
                 newIBD = newIBD,
                 oldgeno = geno,
-                newgeno = new_geno)
+                newgeno = new_geno,
+                obs.method = obs.method,
+                pred.method = pred.method)
   }
 
   #Diagnostics
@@ -190,7 +210,7 @@ smooth_descent <- function(geno,
                   pred = pred_rec,
                   new = new_rec)
 
-  res <- res[c("obsIBD","predIBD","error","newIBD","oldgeno","newgeno","oldmap","rec")]
+  res <- res[c("obsIBD","predIBD","error","newIBD","oldgeno","newgeno","oldmap","rec","obs.method","pred.method")]
   return(res)
 }
 
@@ -285,7 +305,9 @@ smooth_map <- function(geno,
                       estimate_premap = F,
                       max_distance = 10,
                       non_inf = c(0.3,0.7),
-                      verbose = T){
+                      verbose = T,
+                      obs.method = "naive",
+                      pred.method = "prediction"){
   talk <- function(msg){
     if(verbose) cat(msg)
   }
@@ -323,7 +345,8 @@ smooth_map <- function(geno,
                  prediction_threshold = prediction_threshold,
                  prediction_points = prediction_points,
                  error_threshold = error_threshold,
-                 verbose = verbose)
+                 verbose = verbose, obs.method = obs.method,
+                 pred.method = pred.method)
 
   talk("Estimating new linkage\n")
   geno <- as.matrix(res$newgeno)
@@ -442,7 +465,9 @@ smooth_map_iter <- function(geno,
                             estimate_premap = F,
                             max_distance = 10,
                             non_inf = c(0.3,0.7),
-                            verbose = T){
+                            verbose = T,
+                            obs.method = "naive",
+                            pred.method = "prediction"){
 
   talk <- function(msg){
     if(verbose) cat(msg)
@@ -473,7 +498,8 @@ smooth_map_iter <- function(geno,
                  ncores = ncores,
                  mapping_ndim = mapping_ndim, estimate_premap = estimate_premap,
                  max_distance = max_distance, verbose = verbose,
-                 prediction_points = prediction_points))
+                 prediction_points = prediction_points, obs.method = obs.method,
+                 pred.method = pred.method))
     }else{
       #In the next iterations, a new starting map and new genotype is used
       if(class(this_iter) == "try-error") next
@@ -492,7 +518,9 @@ smooth_map_iter <- function(geno,
                               ncores = ncores,
                               mapping_ndim = mapping_ndim,
                               max_distance = max_distance,
-                              verbose = verbose))
+                              verbose = verbose,
+                              obs.method = obs.method,
+                              pred.method = pred.method))
     }
     res[[i]] <- this_iter
     res[[i]]$error_threshold <- err[i]
