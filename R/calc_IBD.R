@@ -658,7 +658,7 @@ correct_to_sumScore <- function(subg_P, threshold = 0.1, ploidy){
 
   #Make sure that IBDs don't exceed 0.5*ploidy
   exceed <- parentalDose > sumScore
-  subg_P[exceed,] <- subg_P[exceed]*sumScore/parentalDose[exceed]
+  subg_P[exceed,] <- subg_P[exceed,]*sumScore/parentalDose[exceed]
 
   #Fully informative if 1/2 is 0
   inf0 <- rowSums(subg_P == 0) == 0.5*ploidy
@@ -683,19 +683,24 @@ correct_to_sumScore <- function(subg_P, threshold = 0.1, ploidy){
   subg_P[!fix] <- corval[!fix]
 
   # Some probabilites can end up >1. Correct for this:
+  #What to do with double reductions?
   if(any(subg_P > 1)){
-    over <- rowSums(subg_P > 1) >= 1
+    #Is over 1 but not close to 2 (1.5 or more is considered close )
+    over <- rowSums(subg_P > 1) > 0 & rowSums(round(subg_P) == 2) != 1
     need_cor <- subg_P[over,,drop = F]
 
-    addp <- need_cor < 1 & need_cor > 0
-    remp <- need_cor > 1
+    addp <- need_cor < 1 & need_cor > 0 #where to add the probabilities
+    remp <- need_cor > 1 #where to remove probabilities
 
     corr_good <- need_cor
-    corr_good[!addp] <- 0
+    corr_good[!addp] <- 0 #This object only stores where we need to add
     corr_bad <- need_cor
-    corr_bad[!remp] <- 0
+    corr_bad[!remp] <- 0 #This object only stores where we need to remove
 
-    need_cor[addp] <- need_cor[addp] + ((rowSums(corr_bad) - rowSums(remp))/(rowSums(addp)))[addp]
+    addval <- (rowSums(corr_bad) - rowSums(remp))/rowSums(addp)
+    addval <- rep(addval,times = rowSums(addp))
+    need_cor[addp] <- need_cor[addp] + addval
+
     need_cor[remp] <- 1
     subg_P[over,] <- need_cor
   }
