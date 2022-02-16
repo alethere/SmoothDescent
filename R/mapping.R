@@ -18,13 +18,14 @@ mdsmap <- function(linkdf,ndim = 2){
   text <- paste(c(length(unique(unlist(linkdf[,1:2]))),
                   apply(linkdf[,c(1,2,3,4)],1,paste,collapse = " ")),
                 collapse = "\n")
-  write(x = text,file = "tmp.map")
+  file <- paste0("tmp.",paste0(sample(c(letters,LETTERS),10),collapse = ""),".map")
+  write(x = text,file = file)
   if(ndim == 2){
-    newmap <- MDSMap::calc.maps.pc("tmp.map",weightfn = "lod2")
+    newmap <- MDSMap::calc.maps.pc(file,weightfn = "lod2")
   }else if(ndim == 3){
-    newmap <- MDSMap::calc.maps.sphere("tmp.map",weightfn = "lod2",p= 200)
+    newmap <- MDSMap::calc.maps.sphere(file,weightfn = "lod2",p= 200)
   }
-  rem <- file.remove("tmp.map")
+  rem <- file.remove(file)
   return(newmap)
 }
 
