@@ -13,18 +13,17 @@
 #' @return Estimated linkage map, including position and other parameters.
 #' @keywords internal
 mdsmap <- function(linkdf,ndim = 2){
-  linkdf <- linkdf[order(linkdf$marker_a,linkdf$marker_b),]
-  linkdf <- linkdf[!duplicated(paste0(linkdf$marker_a,linkdf$marker_b)),]
-  text <- paste(c(length(unique(unlist(linkdf[,1:2]))),
-                  apply(linkdf[,c(1,2,3,4)],1,paste,collapse = " ")),
-                collapse = "\n")
-  write(x = text,file = "tmp.map")
-  if(ndim == 2){
-    newmap <- MDSMap::calc.maps.pc("tmp.map",weightfn = "lod2")
-  }else if(ndim == 3){
-    newmap <- MDSMap::calc.maps.sphere("tmp.map",weightfn = "lod2",p= 200)
-  }
-  rem <- file.remove("tmp.map")
+  linkdf <- polymapR:::prepare_pwd(linkdf)
+  file <- paste0("tmp.",paste0(sample(c(letters,LETTERS),10),collapse = ""),".map")
+  count <- length(unique(unlist(linkdf[,1:2])))
+  write(count,file = file)
+  write.table(linkdf, file = file, append = T,
+              col.names = F, row.names = F, quote = F)
+
+  newmap <- MDSMap::calc.maps.pc(file,weightfn = "lod2",ndim = ndim)
+  rem <- file.remove(file)
+  newmap <- newmap$locimap
+  colnames(newmap)[2] <- "marker"
   return(newmap)
 }
 
@@ -57,7 +56,7 @@ linkdf_shortcut <- function(geno,ploidy,p1name,p2name,ncores = 1){
                                                  ncores = ncores,
                                                  marker_assignment = ma,
                                                  LG_number = 1,verbose = F,
-                                                 convert_palindrome_markers = F)$LG1
+                                                 convert_palindrome_markers = T)$LG1
   linkdf_p2 <- polymapR::finish_linkage_analysis(dosage_matrix = as.matrix(geno),
                                                  target_parent = p2name,
                                                  other_parent = p1name,
@@ -66,7 +65,7 @@ linkdf_shortcut <- function(geno,ploidy,p1name,p2name,ncores = 1){
                                                  ncores = ncores,
                                                  marker_assignment = ma,
                                                  LG_number = 1,verbose = F,
-                                                 convert_palindrome_markers = F)$LG1
+                                                 convert_palindrome_markers = T)$LG1
 
   linkdf <- rbind(linkdf_p1,linkdf_p2)
   return(linkdf)
