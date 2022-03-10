@@ -76,7 +76,8 @@ smooth_descent <- function(geno,
                            non_inf = c(0.3,0.7),
                            verbose = T,
                            obs.method = "naive",
-                           pred.method = "prediction"){
+                           pred.method = "prediction",
+                           hmm.error = 0.01){
   talk <- function(...){
     if(verbose) cat(...)
   }
@@ -122,9 +123,9 @@ smooth_descent <- function(geno,
 
   talk("Obtaining IBD\n")
   obsIBD <- calc_IBD(geno = as.matrix(geno),
-                      p1hom = as.matrix(homologue[,parentcols$p1]),
-                      p2hom = as.matrix(homologue[,parentcols$p2]),
-                      ploidy = ploidy,map = map, p1name = p1name, p2name = p2name,
+                     p1hom = as.matrix(homologue[,parentcols$p1]),
+                     p2hom = as.matrix(homologue[,parentcols$p2]),
+                     ploidy = ploidy,map = map, p1name = p1name, p2name = p2name,
                      method = obs.method)
 
   talk("Predicting IBD\n")
@@ -133,7 +134,7 @@ smooth_descent <- function(geno,
                         p1hom = as.matrix(homologue[,parentcols$p1]),
                         p2hom = as.matrix(homologue[,parentcols$p2]),
                         ploidy = ploidy,map = map, p1name = p1name, p2name = p2name,
-                        method = "hmm")
+                        method = "hmm",hmm.error = hmm.error)
   }else if(pred.method == "prediction"){
     predIBD <- predict_IBD(obsIBD, map, interval = prediction_interval,non_inf = non_inf,
                            pred_points = prediction_points)
@@ -182,11 +183,10 @@ smooth_descent <- function(geno,
     new_geno <- new_geno[rownames(geno),colnames(geno[,-genocols])]
     new_geno[is.na(new_geno)] <- geno[,-genocols][is.na(new_geno)]
     new_geno <- cbind(geno[,genocols],new_geno)
-    newIBD <- calc_IBD(geno = as.matrix(new_geno[,-genocols]),
+    newIBD <- calc_IBD(geno = as.matrix(new_geno),
                        p1hom = as.matrix(homologue[,parentcols$p1]),
                        p2hom = as.matrix(homologue[,parentcols$p2]),
-                       ploidy = ploidy)
-
+                       ploidy = ploidy,method = obs.method, map = map)
     res <- list(obsIBD = obsIBD,
                 predIBD = predIBD,
                 oldmap = map,
@@ -291,23 +291,24 @@ smooth_descent <- function(geno,
 #'    estimate_premap = F, mapping_ndim = 3, ncores = 1)
 #' }
 smooth_map <- function(geno,
-                      homologue,
-                      map = NULL,
-                      ploidy = 2,
-                      p1name = NULL,
-                      p2name = NULL,
-                      prediction_interval = 10,
-                      prediction_threshold = 0.8,
-                      prediction_points = NULL,
-                      error_threshold = 0.8,
-                      ncores = 1,
-                      mapping_ndim = 2,
-                      estimate_premap = F,
-                      max_distance = 10,
-                      non_inf = c(0.3,0.7),
-                      verbose = T,
-                      obs.method = "naive",
-                      pred.method = "prediction"){
+                       homologue,
+                       map = NULL,
+                       ploidy = 2,
+                       p1name = NULL,
+                       p2name = NULL,
+                       prediction_interval = 10,
+                       prediction_threshold = 0.8,
+                       prediction_points = NULL,
+                       error_threshold = 0.8,
+                       ncores = 1,
+                       mapping_ndim = 2,
+                       estimate_premap = F,
+                       max_distance = 10,
+                       non_inf = c(0.3,0.7),
+                       verbose = T,
+                       obs.method = "naive",
+                       pred.method = "prediction",
+                       hmm.error = 0.01){
   talk <- function(msg){
     if(verbose) cat(msg)
   }
@@ -323,8 +324,6 @@ smooth_map <- function(geno,
                               p1name = p1name, p2name = p2name,
                               ncores = ncores)
     map <- mdsmap(linkdf,mapping_ndim)
-    map <- map$locimap
-    colnames(map)[2] <- "marker"
   }
 
   #We should eliminate markers that are distant from everything
@@ -340,13 +339,13 @@ smooth_map <- function(geno,
   map <- map[!far_marks,]
 
   res <- smooth_descent(geno = geno, homologue = homologue, map = map,
-                 ploidy = ploidy, p1name = p1name, p2name = p2name,
-                 prediction_interval = prediction_interval,
-                 prediction_threshold = prediction_threshold,
-                 prediction_points = prediction_points,
-                 error_threshold = error_threshold,
-                 verbose = verbose, obs.method = obs.method,
-                 pred.method = pred.method)
+                        ploidy = ploidy, p1name = p1name, p2name = p2name,
+                        prediction_interval = prediction_interval,
+                        prediction_threshold = prediction_threshold,
+                        prediction_points = prediction_points,
+                        error_threshold = error_threshold,
+                        verbose = verbose, obs.method = obs.method,
+                        pred.method = pred.method,hmm.error = hmm.error)
 
   talk("Estimating new linkage\n")
   geno <- as.matrix(res$newgeno)
@@ -356,8 +355,6 @@ smooth_map <- function(geno,
 
   talk("Mapping new genotypes\n")
   new_map <- mdsmap(linkdf,mapping_ndim)
-  new_map <- new_map$locimap
-  colnames(new_map)[2] <- "marker"
 
   #Diagnostics and output formatting
   res$oldmap = map
@@ -467,7 +464,8 @@ smooth_map_iter <- function(geno,
                             non_inf = c(0.3,0.7),
                             verbose = T,
                             obs.method = "naive",
-                            pred.method = "prediction"){
+                            pred.method = "prediction",
+                            hmm.error = 0.01){
 
   talk <- function(msg){
     if(verbose) cat(msg)
@@ -489,41 +487,48 @@ smooth_map_iter <- function(geno,
   res <- list()
   for(i in 1:iters){
     talk(paste0("Iteration ",i," ----------\n"))
+    tic <- Sys.time()
     if(i == 1){
       this_iter <- try(smooth_map(geno = geno, homologue = homologue,
-                 map = map, ploidy = ploidy, p1name = p1name,
-                 p2name = p2name, prediction_interval = prediction_interval,
-                 prediction_threshold = prediction_threshold,
-                 error_threshold = err[i],
-                 ncores = ncores,
-                 mapping_ndim = mapping_ndim, estimate_premap = estimate_premap,
-                 max_distance = max_distance, verbose = verbose,
-                 prediction_points = prediction_points, obs.method = obs.method,
-                 pred.method = pred.method))
+                                  map = map, ploidy = ploidy, p1name = p1name,
+                                  p2name = p2name, prediction_interval = prediction_interval,
+                                  prediction_threshold = prediction_threshold,
+                                  error_threshold = err[i],
+                                  ncores = ncores,
+                                  mapping_ndim = mapping_ndim, estimate_premap = estimate_premap,
+                                  max_distance = max_distance, verbose = verbose,
+                                  prediction_points = prediction_points, obs.method = obs.method,
+                                  pred.method = pred.method,hmm.error = hmm.error))
     }else{
       #In the next iterations, a new starting map and new genotype is used
-      if(class(this_iter) == "try-error") next
+      if(class(this_iter) == "try-error"){
+        this_iter <- list()
+        next
+      }
       m <- this_iter$newmap
       g <- this_iter$newgeno
       this_iter <- try(smooth_map(geno = g,
-                              map = m,
-                              homologue = homologue,
-                              ploidy = ploidy,
-                              p1name = p1name,
-                              p2name = p2name,
-                              prediction_interval = prediction_interval,
-                              prediction_threshold = prediction_threshold,
-                              prediction_points = prediction_points,
-                              error_threshold = err[i],
-                              ncores = ncores,
-                              mapping_ndim = mapping_ndim,
-                              max_distance = max_distance,
-                              verbose = verbose,
-                              obs.method = obs.method,
-                              pred.method = pred.method))
+                                  map = m,
+                                  homologue = homologue,
+                                  ploidy = ploidy,
+                                  p1name = p1name,
+                                  p2name = p2name,
+                                  prediction_interval = prediction_interval,
+                                  prediction_threshold = prediction_threshold,
+                                  prediction_points = prediction_points,
+                                  error_threshold = err[i],
+                                  ncores = ncores,
+                                  mapping_ndim = mapping_ndim,
+                                  max_distance = max_distance,
+                                  verbose = verbose,
+                                  obs.method = obs.method,
+                                  pred.method = pred.method,
+                                  hmm.error = hmm.error))
     }
+    toc <- Sys.time()
+    this_iter$error_threshold <- err[i]
+    this_iter$time <- difftime(toc,tic, units = "secs")
     res[[i]] <- this_iter
-    res[[i]]$error_threshold <- err[i]
   }
 
   names(res) <- paste0("iter",1:length(res))
