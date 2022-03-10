@@ -1,10 +1,13 @@
 #IBD calculation -----------------
 calc_IBD <- function(geno,p1hom,p2hom,map = NULL,ploidy = 2,method = "naive",
-                     p1name = "P1",p2name = "P2"){
+                     p1name = "P1",p2name = "P2",hmm.error = 0.01){
 
   method <- match.arg(method, c("naive","hmm","heuristic"))
   geno_p1 <- identical(class(geno),class(p1hom))
   geno_p2 <- identical(class(geno),class(p2hom))
+  if(any(class(geno) %in% "data.frame")) geno <- as.matrix(geno)
+  if(any(class(p1hom) %in% "data.frame")) p1hom <- as.matrix(p1hom)
+  if(any(class(p2hom) %in% "data.frame")) p2hom <- as.matrix(p2hom)
   if(!(geno_p1 & geno_p2)){
     stop("All data provided to IBD must be of the same class (i.e. all numeric or all matrices)")
   }else{
@@ -217,8 +220,8 @@ naive_IBD.matrix <- function(geno,p1hom,p2hom,ploidy = 2, p1name = "P1",p2name =
     dat <- suppressWarnings(as.numeric(strsplit(cas,"_")[[1]]))
 
     prob <- naive_IBD.numeric(geno = dat[ncol(p1hom) + ncol(p2hom) + 1],
-                             p1hom = dat[parentcols$p1],
-                             p2hom = dat[parentcols$p2],ploidy = ploidy)
+                              p1hom = dat[parentcols$p1],
+                              p2hom = dat[parentcols$p2],ploidy = ploidy)
     for(j in 1:length(res)){
       res[[j]][cases[[i]]] <- prob[j]
     }
@@ -254,14 +257,15 @@ config <- function(g,ploidy = 2){
 ### HMM implementation ----------
 #Based on polyqtlR's hmm model
 hmm_IBD <- function(geno,p1hom,p2hom,map,ploidy = 2,
-                    p1name = "P1", p2name = "P2", ...){
+                    p1name = "P1", p2name = "P2", hmm.error = 0.01,...){
+  if(is.null(map)) stop("Argument map cannot be null if hmm method is used")
   if(!c("marker","position") %in% colnames(map)) stop("Map must be a data.frame with marker and position columns")
   UseMethod("hmm_IBD",geno)
 }
 
 
 hmm_IBD.matrix <- function(geno,p1hom,p2hom,map,ploidy = 2,
-                           p1name = "P1", p2name = "P2",...){
+                           p1name = "P1", p2name = "P2",hmm.error = 0.01,...){
 
   homnames <- c(colnames(p1hom),colnames(p2hom))
   phased_map <- list(LG1 = data.frame(marker = map$marker,
@@ -269,7 +273,9 @@ hmm_IBD.matrix <- function(geno,p1hom,p2hom,map,ploidy = 2,
                                       p1hom[map$marker,],p2hom[map$marker,]))
   colnames(phased_map[[1]]) <- c("marker","position",paste0("h",1:(ploidy*2)))
   IBD <- polyqtlR::estimate_IBD(phased_maplist = phased_map, genotypes = geno,
-                        ploidy = ploidy, method = "hmm",parent1 = p1name,parent2 = p2name)
+                                ploidy = ploidy, method = "hmm",
+                                parent1 = p1name,parent2 = p2name,
+                                error = hmm.error)
   homArray <- per_homologue(IBD$LG1$IBDarray)
   IBD <- lapply(1:dim(homArray)[[2]],function(i) homArray[,i,])
   names(IBD) <- homnames
@@ -311,7 +317,7 @@ heur_IBD <- function(geno,p1hom,p2hom,map = NULL,ploidy = 2,
 }
 
 heur_IBD.numeric <- function(geno,p1hom,p2hom,ploidy = 2,
-                                p1name = "P1",p2name = "P2",...){
+                             p1name = "P1",p2name = "P2",...){
   homnames <- c(names(p1hom),names(p2hom))
   map <- data.frame(marker = "m1",position = 1)
   phased_map <- list(LG1 = data.frame(marker = map$marker,
@@ -330,8 +336,9 @@ heur_IBD.numeric <- function(geno,p1hom,p2hom,ploidy = 2,
   return(IBD)
 }
 
-heur_IBD.matrix <- function(geno,p1hom,p2hom,map = NULL,ploidy = 2,
+heur_IBD.matrix <- function(geno,p1hom,p2hom,map,ploidy = 2,
                             p1name = "P1",p2name = "P2",...){
+  if(is.null(map)) stop("Argument map cannot be null if heuristic method is used")
   homnames <- c(colnames(p1hom),colnames(p2hom))
   phased_map <- list(LG1 = data.frame(marker = map$marker,
                                       position = map$position,
@@ -340,7 +347,7 @@ heur_IBD.matrix <- function(geno,p1hom,p2hom,map = NULL,ploidy = 2,
 
   IBD <- faster_IBD(phased_maplist = phased_map, dosage_matrix = geno,
                     ploidy = ploidy, p1name = p1name, p2name = p2name,
-                    method.exp = "interval")
+                    method.exp = "simple", double_reduction = F)
   IBD <- lapply(1:dim(IBD$LG1$IBDarray)[[2]],function(i) IBD$LG1$IBDarray[,i,])
   names(IBD) <- homnames
   return(IBD)
@@ -392,7 +399,8 @@ faster_IBD <- function(phased_maplist,
                        ncores = 1,
                        p1name = "P1",
                        p2name = "P2",
-                       method.exp = "simple"){
+                       method.exp = "simple",
+                       double_reduction = T){
 
   if(is.null(ploidy2)) ploidy2 <- ploidy
   ploidy1 <- ploidy
@@ -428,110 +436,110 @@ faster_IBD <- function(phased_maplist,
     }
   }
 
-    outlist <- lapply(seq(phased_maplist),function(i){
-      ph <- phased_maplist[[i]]
-      posdf <- ph[,c("marker", "position"),drop = F]
+  outlist <- lapply(seq(phased_maplist),function(i){
+    ph <- phased_maplist[[i]]
+    posdf <- ph[,c("marker", "position"),drop = F]
 
-      ## If marker data is conflicting and co-located, can lead to problems. Jitter positions if necessary
-      while(length(unique(posdf$position)) < nrow(posdf)){
-        warning("Non-unique marker positions detected. Jittering positions.")
-        posdf[duplicated(posdf$position),"position"] <- jitter(posdf[duplicated(posdf$position),"position"],amount=0.1)
-        #Map might no longer be in order:
-        ph <- ph[order(posdf$position),,drop = F]
-        posdf <- posdf[order(posdf$position),,drop = F]
+    ## If marker data is conflicting and co-located, can lead to problems. Jitter positions if necessary
+    while(length(unique(posdf$position)) < nrow(posdf)){
+      warning("Non-unique marker positions detected. Jittering positions.")
+      posdf[duplicated(posdf$position),"position"] <- jitter(posdf[duplicated(posdf$position),"position"],amount=0.1)
+      #Map might no longer be in order:
+      ph <- ph[order(posdf$position),,drop = F]
+      posdf <- posdf[order(posdf$position),,drop = F]
+    }
+
+    posvec <- posdf$position
+    mark <- as.character(posdf$marker)
+    names(posvec) <- mark
+
+    #Same distmat calculation without the need of reshape2
+    #or additional objects
+    distmat <- abs(outer(posvec,posvec,FUN = "-"))
+    k0_mat <- mapfun(distmat, f = factor_dist)
+
+    rownames(ph) <- ph$marker
+    ph <- ph[,-which(colnames(ph) %in% c("marker", "position"))]
+    ph <- as.matrix(ph)
+
+    scd <- dosage_matrix[rownames(ph),,drop = F]
+
+    # get parental scores
+    #Names should not be assumed
+    par <- scd[,c(p1name,p2name),drop = F]
+    progeny <- scd[,-which(colnames(scd) %in% c(p1name,p2name)),drop = F]
+
+    # make a garray (=genotype probability array) with only 0.5
+    garray <- array(data = 0.5, dim = c(nrow(ph), ploidy1 + ploidy2, ncol(scd)-2),
+                    dimnames = list(rownames(scd), colnames(ph), colnames(scd)[3:ncol(scd)]))
+
+    # get all markers with fully informative dosage
+    P1_hp <- scd[,p1name,drop = F] == 0.5*ploidy1
+    P2_hp <- scd[,p2name,drop = F] == 0.5*ploidy2
+
+    # get all maximum scores per marker which are informative in offspring
+    sumP <- rowSums(par)
+
+    # fill in garray
+    for(m in seq(nrow(scd))){
+      # get progeny that is informative - this is the kernel of the original approach:
+      # progeny score which equals (or exceeds, DR?) the sum of the parental scores have inherited
+      # all the parental alleles, and so we assign all these homologues with a probability of 1
+      progS <- colnames(progeny)[progeny[m,] >= sumP[m] & !is.na(progeny[m,])]
+
+      # assign 1 if so.
+      garray[m,ph[m,] == 1,progS] <- 1
+
+      # special case where dosage is fully informative (dosage = 0.5*ploidy)
+      # only if one of the P1 dosages should be 0.5*ploidy
+      # and marker is assigned to 0.5*ploidy homologues
+      # apply zeros to all others
+      if((P1_hp[m] | P2_hp[m]) & sum(ph[m,]) == sumP[m]){
+        if(P1_hp[m])
+          garray[m,c(ph[m,1:ploidy1] == 0, rep(FALSE, ploidy2)),progS] <- 0
+        if(P2_hp[m])
+          garray[m,c(rep(FALSE, ploidy1) ,ph[m,(ploidy1+1):(ploidy1 + ploidy2)] == 0),progS] <- 0
       }
+      # if allele is absent in progeny, also informative:
+      prog0 <- colnames(progeny)[progeny[m,] == 0 & !is.na(progeny[m,])]
+      garray[m,ph[m,] == 1,prog0] <- 0
+    }
 
-      posvec <- posdf$position
-      mark <- as.character(posdf$marker)
-      names(posvec) <- mark
+    # order garray
+    garray <- garray[colnames(distmat),,]
 
-      #Same distmat calculation without the need of reshape2
-      #or additional objects
-      distmat <- abs(outer(posvec,posvec,FUN = "-"))
-      k0_mat <- mapfun(distmat, f = factor_dist)
+    # find nearest informative and change genotype probability accordingly
+    if(method.exp == "simple"){
+      garray <- simple_expansion(garray,k0_mat,posvec)
+    }else{
+      garray <- interval_expansion(garray,k0_mat,posvec)
+    }
 
-      rownames(ph) <- ph$marker
-      ph <- ph[,-which(colnames(ph) %in% c("marker", "position"))]
-      ph <- as.matrix(ph)
+    # call correct_to_sumScore to array:
+    for(g in dimnames(garray)[[3]]){
+      corr_P1 <- correct_to_sumScore(subg_P = garray[,1:ploidy1,g],
+                                     threshold = fix_threshold, ploidy = ploidy1)
+      garray[,1:ploidy1,g] <- corr_P1
 
-      scd <- dosage_matrix[rownames(ph),,drop = F]
+      corr_P2 <- correct_to_sumScore(subg_P = garray[,(ploidy1 +1):(ploidy1 + ploidy2),g],
+                                     threshold = fix_threshold, ploidy = ploidy2)
+      garray[,(ploidy1 +1):(ploidy1 + ploidy2),g] <- corr_P2
+    }
 
-      # get parental scores
-      #Names should not be assumed
-      par <- scd[,c(p1name,p2name),drop = F]
-      progeny <- scd[,-which(colnames(scd) %in% c(p1name,p2name)),drop = F]
-
-      # make a garray (=genotype probability array) with only 0.5
-      garray <- array(data = 0.5, dim = c(nrow(ph), ploidy1 + ploidy2, ncol(scd)-2),
-                      dimnames = list(rownames(scd), colnames(ph), colnames(scd)[3:ncol(scd)]))
-
-      # get all markers with fully informative dosage
-      P1_hp <- scd[,p1name,drop = F] == 0.5*ploidy1
-      P2_hp <- scd[,p2name,drop = F] == 0.5*ploidy2
-
-      # get all maximum scores per marker which are informative in offspring
-      sumP <- rowSums(par)
-
-      # fill in garray
-      for(m in seq(nrow(scd))){
-        # get progeny that is informative - this is the kernel of the original approach:
-        # progeny score which equals (or exceeds, DR?) the sum of the parental scores have inherited
-        # all the parental alleles, and so we assign all these homologues with a probability of 1
-        progS <- colnames(progeny)[progeny[m,] >= sumP[m] & !is.na(progeny[m,])]
-
-        # assign 1 if so.
-        garray[m,ph[m,] == 1,progS] <- 1
-
-        # special case where dosage is fully informative (dosage = 0.5*ploidy)
-        # only if one of the P1 dosages should be 0.5*ploidy
-        # and marker is assigned to 0.5*ploidy homologues
-        # apply zeros to all others
-        if((P1_hp[m] | P2_hp[m]) & sum(ph[m,]) == sumP[m]){
-          if(P1_hp[m])
-            garray[m,c(ph[m,1:ploidy1] == 0, rep(FALSE, ploidy2)),progS] <- 0
-          if(P2_hp[m])
-            garray[m,c(rep(FALSE, ploidy1) ,ph[m,(ploidy1+1):(ploidy1 + ploidy2)] == 0),progS] <- 0
-        }
-        # if allele is absent in progeny, also informative:
-        prog0 <- colnames(progeny)[progeny[m,] == 0 & !is.na(progeny[m,])]
-        garray[m,ph[m,] == 1,prog0] <- 0
-      }
-
-      # order garray
-      garray <- garray[colnames(distmat),,]
-
-      # find nearest informative and change genotype probability accordingly
-      if(method.exp == "simple"){
-        garray <- simple_expansion(garray,k0_mat,posvec)
-      }else{
-        garray <- interval_expansion(garray,k0_mat,posvec)
-      }
-
-      # call correct_to_sumScore to array:
-      for(g in dimnames(garray)[[3]]){
-        corr_P1 <- correct_to_sumScore(subg_P = garray[,1:ploidy1,g],
-                                       threshold = fix_threshold, ploidy = ploidy1)
-        garray[,1:ploidy1,g] <- corr_P1
-
-        corr_P2 <- correct_to_sumScore(subg_P = garray[,(ploidy1 +1):(ploidy1 + ploidy2),g],
-                                       threshold = fix_threshold, ploidy = ploidy2)
-        garray[,(ploidy1 +1):(ploidy1 + ploidy2),g] <- corr_P2
-      }
-
-      return(list("IBDtype" = "haplotypeIBD",
-                  "IBDarray" = garray,
-                  "map" = cbind("chromosome" = i,
-                                posdf),
-                  "parental_phase" = ph,
-                  "biv_dec" = NULL,
-                  "gap" = NULL,
-                  "genocodes" = NULL,
-                  "pairing" = NULL,
-                  "ploidy" = ploidy,
-                  "ploidy2" = ploidy2,
-                  "method" = "heur",
-                  "error" = NULL))
-    })
+    return(list("IBDtype" = "haplotypeIBD",
+                "IBDarray" = garray,
+                "map" = cbind("chromosome" = i,
+                              posdf),
+                "parental_phase" = ph,
+                "biv_dec" = NULL,
+                "gap" = NULL,
+                "genocodes" = NULL,
+                "pairing" = NULL,
+                "ploidy" = ploidy,
+                "ploidy2" = ploidy2,
+                "method" = "heur",
+                "error" = NULL))
+  })
 
   if(!is.null(names(phased_maplist))){
     names(outlist) <- names(phased_maplist)
@@ -683,25 +691,17 @@ correct_to_sumScore <- function(subg_P, threshold = 0.1, ploidy){
   subg_P[!fix] <- corval[!fix]
 
   # Some probabilites can end up >1. Correct for this:
-  #What to do with double reductions?
-  if(any(subg_P > 1)){
-    #Is over 1 but not close to 2 (1.5 or more is considered close )
-    over <- rowSums(subg_P > 1) > 0 & rowSums(round(subg_P) == 2) != 1
+  while(any(subg_P > 1)){
+    over <- rowSums(subg_P > 1) > 0
     need_cor <- subg_P[over,,drop = F]
 
-    addp <- need_cor < 1 & need_cor > 0 #where to add the probabilities
-    remp <- need_cor > 1 #where to remove probabilities
-
-    corr_good <- need_cor
-    corr_good[!addp] <- 0 #This object only stores where we need to add
-    corr_bad <- need_cor
-    corr_bad[!remp] <- 0 #This object only stores where we need to remove
-
-    addval <- (rowSums(corr_bad) - rowSums(remp))/rowSums(addp)
-    addval <- rep(addval,times = rowSums(addp))
-    need_cor[addp] <- need_cor[addp] + addval
-
-    need_cor[remp] <- 1
+    need_cor <- t(apply(need_cor,1,function(gp){
+      addp <-  gp < 1 & gp > 0#& gp>=0.5
+      remp <- gp > 1
+      gp[addp] <- gp[addp] + (sum(gp[gp > 1] - 1)/sum(addp))
+      gp[remp] <- 1
+      return(gp)
+    }))
     subg_P[over,] <- need_cor
   }
 
