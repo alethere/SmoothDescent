@@ -24,6 +24,7 @@ mdsmap <- function(linkdf,ndim = 2){
   rem <- file.remove(file)
   newmap <- newmap$locimap
   colnames(newmap)[2] <- "marker"
+
   return(newmap)
 }
 
