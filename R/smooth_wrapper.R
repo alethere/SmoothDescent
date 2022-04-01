@@ -39,6 +39,15 @@
 #' IBD probability non-informative (if they fall within the threshold they will be
 #' ignored during prediction). Defaults to 0.3 - 0.7. Symmetrical boundaries are
 #' recommended but not necessary.
+#' @param obs.method character, either "naive" or "heuristic" (or substrings). This parameter allows to
+#' switch between using the IBD calculation (for observed IBDs) described in the Smooth Descent paper, or the
+#' heuristic method from `polyqtlR`. However, our research has shown better results with the
+#' naive method.
+#' @param pred.method character, either "prediction" or "hmm" (or substrings). This parameter
+#' allows to switch between using the IBD calculation (for predicted IBDs) between the weighted
+#' average method or the Hidden Markov model implemented in `polyqtlR`. Our research shows better
+#' results in polyploids with the HMM, although for high marker densities the
+#' weighted average method is faster (specially if `prediction_points` is used)
 #' @param verbose logical, should smooth descent report the steps it takes?
 #'
 #'
@@ -258,6 +267,15 @@ smooth_descent <- function(geno,
 #' IBD probability non-informative (if they fall within the threshold they will be
 #' ignored during prediction). Defaults to 0.3 - 0.7. Symmetrical boundaries are
 #' recommended but not necessary.
+#' @param obs.method character, either "naive" or "heuristic" (or substrings). This parameter allows to
+#' switch between using the IBD calculation (for observed IBDs) described in the Smooth Descent paper, or the
+#' heuristic method from `polyqtlR`. However, our research has shown better results with the
+#' naive method.
+#' @param pred.method character, either "prediction" or "hmm" (or substrings). This parameter
+#' allows to switch between using the IBD calculation (for predicted IBDs) between the weighted
+#' average method or the Hidden Markov model implemented in `polyqtlR`. Our research shows better
+#' results in polyploids with the HMM, although for high marker densities the
+#' weighted average method is faster (specially if `prediction_points` is used)
 #' @param verbose logical, should smooth descent report the steps it takes?
 #'
 #' @return list containing the following items:
@@ -413,6 +431,15 @@ smooth_map <- function(geno,
 #' IBD probability non-informative (if they fall within the threshold they will be
 #' ignored during prediction). Defaults to 0.3 - 0.7. Symmetrical boundaries are
 #' recommended but not necessary.
+#' @param obs.method character, either "naive" or "heuristic" (or substrings). This parameter allows to
+#' switch between using the IBD calculation (for observed IBDs) described in the Smooth Descent paper, or the
+#' heuristic method from `polyqtlR`. However, our research has shown better results with the
+#' naive method.
+#' @param pred.method character, either "prediction" or "hmm" (or substrings). This parameter
+#' allows to switch between using the IBD calculation (for predicted IBDs) between the weighted
+#' average method or the Hidden Markov model implemented in `polyqtlR`. Our research shows better
+#' results in polyploids with the HMM, although for high marker densities the
+#' weighted average method is faster (specially if `prediction_points` is used)
 #' @param verbose logical, should smooth descent report the steps it takes?
 #'
 #' @return list of lists, where each element contains the following items:
@@ -534,4 +561,3 @@ smooth_map_iter <- function(geno,
   names(res) <- paste0("iter",1:length(res))
   return(res)
 }
-
