@@ -56,7 +56,7 @@ predict_IBD <- function(IBD,map,interval = 10, method = "kosambi",
     }
   }else if(type[1] == "data.frame"){
     predict_IBD(IBD,map,interval, method = method,
-                       non_inf = non_inf,pred_points = pred_points)
+                non_inf = non_inf,pred_points = pred_points)
   }
 
   UseMethod("predict_IBD",IBD)
