@@ -1,31 +1,13 @@
 #IBD calculation -----------------
-calc_IBD <- function(geno,p1hom,p2hom,map = NULL,ploidy = 2,method = "naive",
-                     p1name = "P1",p2name = "P2",hmm.error = 0.01){
-
-  method <- match.arg(method, c("naive","hmm","heuristic"))
-  geno_p1 <- identical(class(geno),class(p1hom))
-  geno_p2 <- identical(class(geno),class(p2hom))
-  if(any(class(geno) %in% "data.frame")) geno <- as.matrix(geno)
-  if(any(class(p1hom) %in% "data.frame")) p1hom <- as.matrix(p1hom)
-  if(any(class(p2hom) %in% "data.frame")) p2hom <- as.matrix(p2hom)
-  if(!(geno_p1 & geno_p2)){
-    stop("All data provided to IBD must be of the same class (i.e. all numeric or all matrices)")
-  }else{
-    switch(method,
-           naive = UseMethod("naive_IBD",geno),
-           hmm = UseMethod("hmm_IBD",geno),
-           heuristic = UseMethod("heur_IBD",geno))
-  }
-}
-
-
-### SD Implementation ---------
-
 #' Calculation of IBD
 #'
-#' This function computes Identity-by-descent probabilities according to a naive model
-#' based on random assortment of markers. It requires homologue matrices (`p1hom` and `p2hom`)
-#' indicating which homologues of each parent carry a genotype of 1 or 0 for the tracked allele.
+#' This function computes Identity-by-descent probabilities according to a different IBD models:
+#' - Naive model based on random assortment of markers.
+#' - HMM model as implemented in `polyqtlR`
+#' - Heuristic model as implmented in `polyqtlR`
+#'
+#' It requires homologue matrices (`p1hom` and `p2hom`) indicating which homologues of each parent carry
+#' a genotype of 1 or 0 for the tracked allele.
 #' Based on this, a probability matrix is returned: for each individual how likely it is,
 #' at each marker, that it has inherited each of the homologues.
 #' As a generic method, it can use a single genotype of one marker (and two vectors
@@ -44,6 +26,16 @@ calc_IBD <- function(geno,p1hom,p2hom,map = NULL,ploidy = 2,method = "naive",
 #' as `geno`.
 #' @param ploidy numeric, indicating the ploidy of an organism. Only even ploidies allowed and
 #' all individuals are expected to have the same ploidy.
+#' @param method character indicating IBD method to use. Either "naive" (default), "hmm" for hidden markov model
+#' or "heuristic" for the heuristic model of `polyqtlR`
+#' @param map data.frame containing "position" and "marker" columns. Required for "hmm" and "heuristic"
+#' methods
+#' @param p1name character, column name containing the first parent name in the geno matrix. Required
+#' for "heuristic" and "hmm" methods
+#' @param p2name character, column name containing the second parent name in the geno matrix. Required
+#' for "heuristic" and "hmm" methods
+#' @param hmm.error numeric, if "hmm" method is used, the estimated error percentage in the genotypes.
+#' The default (0.01) performs quite well if there's not a large number of errors.
 #'
 #' @return The naive probability of having inherited each parental homologue. If the
 #' offspring genotype is impossible given the parental homologues, NA is returned.
@@ -66,6 +58,29 @@ calc_IBD <- function(geno,p1hom,p2hom,map = NULL,ploidy = 2,method = "naive",
 #' IBD <- naive_IBD(geno[,1,drop = FALSE],hom[,1:2],hom[,3:4], ploidy = 2)
 #' #For all individuals
 #' IBD <- naive_IBD(geno,hom[,1:2],hom[,3:4], ploidy = 2)
+calc_IBD <- function(geno,p1hom,p2hom,map = NULL,ploidy = 2,method = "naive",
+                     p1name = "P1",p2name = "P2",hmm.error = 0.01){
+
+  method <- match.arg(method, c("naive","hmm","heuristic"))
+  geno_p1 <- identical(class(geno),class(p1hom))
+  geno_p2 <- identical(class(geno),class(p2hom))
+  if(any(class(geno) %in% "data.frame")) geno <- as.matrix(geno)
+  if(any(class(p1hom) %in% "data.frame")) p1hom <- as.matrix(p1hom)
+  if(any(class(p2hom) %in% "data.frame")) p2hom <- as.matrix(p2hom)
+  if(!(geno_p1 & geno_p2)){
+    stop("All data provided to IBD must be of the same class (i.e. all numeric or all matrices)")
+  }else{
+    switch(method,
+           naive = UseMethod("naive_IBD",geno),
+           hmm = UseMethod("hmm_IBD",geno),
+           heuristic = UseMethod("heur_IBD",geno))
+  }
+}
+
+
+### SD Implementation ---------
+
+
 naive_IBD <- function(geno,p1hom,p2hom,ploidy = 2,p1name = "P1",p2name = "P2",...){
   geno_p1 <- identical(class(geno),class(p1hom))
   geno_p2 <- identical(class(geno),class(p2hom))
@@ -246,9 +261,6 @@ naive_IBD.matrix <- function(geno,p1hom,p2hom,ploidy = 2, p1name = "P1",p2name =
 #'
 #' @return a list of vectors, where each element indicates
 #' one possible parental chromosome inheritance configuration.
-#'
-#' @example
-#' config(1,4)
 config <- function(g,ploidy = 2){
   genoes <- c(rep(1,g),rep(0,ploidy-g))
   return(unique(combinat::permn(genoes)))

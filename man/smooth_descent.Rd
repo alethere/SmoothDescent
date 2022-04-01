@@ -16,7 +16,10 @@ smooth_descent(
   prediction_points = NULL,
   error_threshold = 0.8,
   non_inf = c(0.3, 0.7),
-  verbose = T
+  verbose = T,
+  obs.method = "naive",
+  pred.method = "prediction",
+  hmm.error = 0.01
 )
 }
 \arguments{
@@ -58,6 +61,17 @@ ignored during prediction). Defaults to 0.3 - 0.7. Symmetrical boundaries are
 recommended but not necessary.}
 
 \item{verbose}{logical, should smooth descent report the steps it takes?}
+
+\item{obs.method}{character, either "naive" or "heuristic" (or substrings). This parameter allows to
+switch between using the IBD calculation (for observed IBDs) described in the Smooth Descent paper, or the
+heuristic method from `polyqtlR`. However, our research has shown better results with the
+naive method.}
+
+\item{pred.method}{character, either "prediction" or "hmm" (or substrings). This parameter
+allows to switch between using the IBD calculation (for predicted IBDs) between the weighted
+average method or the Hidden Markov model implemented in `polyqtlR`. Our research shows better
+results in polyploids with the HMM, although for high marker densities the
+weighted average method is faster (specially if `prediction_points` is used)}
 }
 \value{
 A list containing the following items:

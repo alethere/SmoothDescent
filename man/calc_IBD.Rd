@@ -2,18 +2,22 @@
 % Please edit documentation in R/calc_IBD.R
 \name{calc_IBD}
 \alias{calc_IBD}
-\alias{calc_IBD.numeric}
-\alias{calc_IBD.matrix}
 \title{Calculation of IBD}
 \usage{
-calc_IBD(geno, p1hom, p2hom, ploidy = 2)
-
-\method{calc_IBD}{numeric}(geno, p1hom, p2hom, ploidy = 2)
-
-\method{calc_IBD}{matrix}(geno, p1hom, p2hom, ploidy = 2)
+calc_IBD(
+  geno,
+  p1hom,
+  p2hom,
+  map = NULL,
+  ploidy = 2,
+  method = "naive",
+  p1name = "P1",
+  p2name = "P2",
+  hmm.error = 0.01
+)
 }
 \arguments{
-\item{geno}{integer or matrix containing genotypes (genoages of allele A, from 0 to ploidy).
+\item{geno}{integer or matrix containing genotypes (genotypes of allele A, from 0 to ploidy).
 If `geno` is a matrix, each row must be labelled with a marker name, and each column is
 interpreted as an individual. Note that for many markers of one single individual, a
 1 column matrix must be provided.}
@@ -26,12 +30,27 @@ as `geno`.}
 If `geno` is an integer, `p2hom` must be a vector of length ploidy. If `geno` is a matrix,`p2hom` must be a matrix of ncol = ploidy and nrow = nrow(geno) and the same rownames
 as `geno`.}
 
+\item{map}{data.frame containing "position" and "marker" columns. Required for "hmm" and "heuristic"
+methods}
+
 \item{ploidy}{numeric, indicating the ploidy of an organism. Only even ploidies allowed and
 all individuals are expected to have the same ploidy.}
+
+\item{method}{character indicating IBD method to use. Either "naive" (default), "hmm" for hidden markov model
+or "heuristic" for the heuristic model of `polyqtlR`}
+
+\item{p1name}{character, column name containing the first parent name in the geno matrix. Required
+for "heuristic" and "hmm" methods}
+
+\item{p2name}{character, column name containing the second parent name in the geno matrix. Required
+for "heuristic" and "hmm" methods}
+
+\item{hmm.error}{numeric, if "hmm" method is used, the estimated error percentage in the genotypes.
+The default (0.01) performs quite well if there's not a large number of errors.}
 }
 \value{
 The naive probability of having inherited each parental homologue. If the
-offspring genoage is impossible given the parental homologues, NA is returned.
+offspring genotype is impossible given the parental homologues, NA is returned.
 If `geno`is a vector, returns a one-row matrix, each column containing the
 probability of having inherited that parental homologue (the first columns corresponding
 to parent 1, and the rest to parent 2). If `geno` is a matrix, a list of matrices is returned.
@@ -39,32 +58,30 @@ Each element is the probabilities for all individuals of having inherited one pa
 homologue. There should be ploidy*2 elements in the list.
 }
 \description{
-This function computes Identity-by-descent probabilities according to a naive model
-based on random assortment of markers. It requires homologue matrices (`p1hom` and `p2hom`)
-indicating which homologues of each parent carry a genoage of 1 or 0 for the tracked allele.
+This function computes Identity-by-descent probabilities according to a different IBD models:
+- Naive model based on random assortment of markers.
+- HMM model as implemented in `polyqtlR`
+- Heuristic model as implmented in `polyqtlR`
+}
+\details{
+It requires homologue matrices (`p1hom` and `p2hom`) indicating which homologues of each parent carry
+a genotype of 1 or 0 for the tracked allele.
 Based on this, a probability matrix is returned: for each individual how likely it is,
 at each marker, that it has inherited each of the homologues.
-As a generic method, it can use a single genoage of one marker (and two vectors
+As a generic method, it can use a single genotype of one marker (and two vectors
 of homologue assignment); a vector of markers (and two homologue matrices) or a matrix of markers
 (and two homologue matrices).
 }
-\section{Methods (by class)}{
-\itemize{
-\item \code{numeric}: Function for a single marker of a single individual.
-
-\item \code{matrix}: Function for handling matrix input to calc_IBD
-}}
-
 \examples{
 data("genotype")
 geno <- geno[,-1:-2] #we take out parental genotypes
 data("homologue")
 
 #For a single genotype
-IBD <- calc_IBD(geno[1,1],hom[1,1:2],hom[1,3:4], ploidy = 2)
+IBD <- naive_IBD(geno[1,1],hom[1,1:2],hom[1,3:4], ploidy = 2)
 #For a single individual
 #The genotype must be a matrix of one column!
-IBD <- calc_IBD(geno[,1,drop = FALSE],hom[,1:2],hom[,3:4], ploidy = 2)
+IBD <- naive_IBD(geno[,1,drop = FALSE],hom[,1:2],hom[,3:4], ploidy = 2)
 #For all individuals
-IBD <- calc_IBD(geno,hom[,1:2],hom[,3:4], ploidy = 2)
+IBD <- naive_IBD(geno,hom[,1:2],hom[,3:4], ploidy = 2)
 }
