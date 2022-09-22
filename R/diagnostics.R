@@ -95,7 +95,8 @@ rec_count.list <- function(ibd,map,non_inf = c(0.3,0.7)){
                       p2 = (length(ibd)/2+1):length(ibd))
   recs <- lapply(parentindex,function(p){
     ind = rowSums(extract(recs[p],"individual"))/2
-    counts <- sapply(extract(recs[p],"on_map",simplify = F),`[`,,"count")
+    counts <- lapply(extract(recs[p],"on_map",simplify = F),`[`,,"count")
+    counts <- do.call(rbind,counts)
     on_map <- data.frame(recs[p][[1]]$on_map[,1:3],count = rowSums(counts)/2)
     return(list(individual = ind,
                 on_map = on_map))
