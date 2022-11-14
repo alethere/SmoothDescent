@@ -291,7 +291,7 @@ graphical_genotype(sd1$predIBD$H1_P1, main = "Only for homologue 1")
 
 It is also useful to visualize single individuals if combined with the `extract()` utility function.
 ```{r, fig.width= 3}
-ibd <- extract(sd1$pred,c("Ind02"))
+ibd <- extract(sd1$predIBD,c("Ind02"))
 #Title and colours can also be easily changed.
 graphical_genotype(ibd, main = "Individual 02", 
                    col = hcl.colors(300,"Dark Mint"))
@@ -299,7 +299,7 @@ graphical_genotype(ibd, main = "Individual 02",
 
 If we want to extract IBDs from multiple individuals we can also use `extract()` 
 ```{r}
-ibd <- extract(sd1$pred,c("Ind02","Ind14","Ind07"))
+ibd <- extract(sd1$predIBD,c("Ind02","Ind14","Ind07"))
 graphical_genotype(ibd, col = hcl.colors(300,"Sunset"))
 ```
 
