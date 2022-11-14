@@ -20,6 +20,9 @@ vignette: >
 # )
 library(SmoothDescent)
 library(knitr)
+data(genotype,package = "SmoothDescent")
+data(homologue,package = "SmoothDescent")
+data(map,package = "SmoothDescent")
 ```
 
 Smooth Descent is a map-cleaning algorithm that can calculate identity by descent probabilities, predict genotyping errors and impute corrected genotypes. By applying this method, new genetic maps can be estimated to improve genetic map quality in an iterative process, similarly as was done in SMOOTH (van Os et al. 2006)^[Os, Hans & Stam, Piet & Visser, Richard & Eck, Herman. (2006). SMOOTH: A statistical method for successful removal of genotyping errors from high-density genetic linkage data. TAG. Theoretical and applied genetics. Theoretische und angewandte Genetik. DOI: 10.1007/s00122-005-0124-y. https://link.springer.com/article/10.1007/s00122-005-0124-y]
