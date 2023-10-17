@@ -17,8 +17,7 @@
 #' are expected.
 #' @param homologue matrix with markers on the rows, homologue names on the columns.
 #' Rownames and columnames expected.
-#' @param map data.frame with at least columns "marker" and "position". If it is
-#' not specified, a map will be estimated from the uncorrected genotype data with polymapR.
+#' @param map data.frame with at least columns "marker" and "position".
 #' @param ploidy numeric indicating the ploidy. Both parents must be of the same ploidy,
 #' and it is assumed that "homologue" has 2*ploidy columns.
 #' @param p1name character, name of the first parent. Must be present in the geno columnames.
