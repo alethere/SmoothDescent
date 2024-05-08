@@ -50,8 +50,8 @@ linkdf_shortcut <- function(geno,ploidy,p1name,p2name,ncores = 1){
   ma <- data.frame(markers = rownames(geno),Assigned_LG = 1)
   rownames(ma) <- ma$markers
   linkdf_p1 <- polymapR::finish_linkage_analysis(dosage_matrix = as.matrix(geno),
-                                                 target_parent = p1name,
-                                                 other_parent = p2name,
+                                                 parent1 = p1name,
+                                                 parent2 = p2name,
                                                  ploidy = ploidy,
                                                  G2_test = T,
                                                  ncores = ncores,
@@ -59,8 +59,8 @@ linkdf_shortcut <- function(geno,ploidy,p1name,p2name,ncores = 1){
                                                  LG_number = 1,verbose = F,
                                                  convert_palindrome_markers = T)$LG1
   linkdf_p2 <- polymapR::finish_linkage_analysis(dosage_matrix = as.matrix(geno),
-                                                 target_parent = p2name,
-                                                 other_parent = p1name,
+                                                 parent1 = p2name,
+                                                 parent2 = p1name,
                                                  ploidy = ploidy,
                                                  G2_test = T,
                                                  ncores = ncores,
